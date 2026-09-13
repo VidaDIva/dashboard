@@ -1,0 +1,218 @@
+---
+
+import "../styles/global.css";
+
+const respuesta = await fetch("http://localhost:8080/api/mediciones");
+const mediciones = await respuesta.json();
+
+const alertas = [];
+
+for (const medicion of mediciones) {
+if (medicion.rms > 4) {
+alertas.push({
+tipo: "CRITICA",
+titulo: "RMS elevado",
+mensaje: `El valor RMS es ${medicion.rms} m/s²`,
+valor: medicion.rms
+});
+}
+
+if (medicion.frecuencia > 100) {
+alertas.push({
+tipo: "ADVERTENCIA",
+titulo: "Frecuencia elevada",
+mensaje: `La frecuencia alcanzó ${medicion.frecuencia} Hz`,
+valor: medicion.frecuencia
+});
+}
+
+if (Math.abs(medicion.inclinacion) > 10) {
+alertas.push({
+tipo: "ADVERTENCIA",
+titulo: "Inclinación elevada",
+mensaje: `La inclinación alcanzó ${medicion.inclinacion}°`,
+valor: medicion.inclinacion
+});
+}
+}
+---
+
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Picur | Alertas</title>
+  </head>
+
+  <body>
+    <div class="dashboard">
+
+```
+  <aside class="sidebar">
+
+    <div class="logo">
+      <div class="logo-icon">P</div>
+      <span>Picur</span>
+    </div>
+
+    <nav>
+      <a href="/">
+        <span>▦</span>
+        Dashboard
+      </a>
+
+      <a href="/mediciones">
+        <span>◉</span>
+        Mediciones
+      </a>
+
+      <a href="/alertas" class="active">
+        <span>⚠</span>
+        Alertas
+      </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="status">
+        <span class="status-dot"></span>
+        Sistema conectado
+      </div>
+    </div>
+
+  </aside>
+
+  <main class="main">
+
+    <header class="header">
+
+      <div>
+        <p class="eyebrow">SEGURIDAD</p>
+
+        <h1>Alertas</h1>
+
+        <p class="subtitle">
+          Eventos detectados en las mediciones de los sensores.
+        </p>
+      </div>
+
+      <div class="connection">
+        <span class="status-dot"></span>
+        API conectada
+      </div>
+
+    </header>
+
+    <section class="alert-summary">
+
+      <div class="summary-card">
+        <span class="summary-label">
+          Total de alertas
+        </span>
+
+        <strong>
+          {alertas.length}
+        </strong>
+      </div>
+
+      <div class="summary-card critical">
+        <span class="summary-label">
+          Críticas
+        </span>
+
+        <strong>
+          {
+            alertas.filter(
+              (alerta) => alerta.tipo === "CRITICA"
+            ).length
+          }
+        </strong>
+      </div>
+
+      <div class="summary-card warning">
+        <span class="summary-label">
+          Advertencias
+        </span>
+
+        <strong>
+          {
+            alertas.filter(
+              (alerta) => alerta.tipo === "ADVERTENCIA"
+            ).length
+          }
+        </strong>
+      </div>
+
+    </section>
+
+    <section class="alerts-container">
+
+      {alertas.length > 0 ? (
+        alertas.map((alerta) => (
+          <div
+            class:list={[
+              "alert",
+              alerta.tipo === "CRITICA"
+                ? "alert-critical"
+                : "alert-warning"
+            ]}
+          >
+
+            <div class="alert-icon">
+              {alerta.tipo === "CRITICA" ? "!" : "⚠"}
+            </div>
+
+            <div class="alert-content">
+
+              <div class="alert-top">
+
+                <span class="alert-type">
+                  {alerta.tipo}
+                </span>
+
+                <span class="alert-value">
+                  {alerta.valor}
+                </span>
+
+              </div>
+
+              <h2>
+                {alerta.titulo}
+              </h2>
+
+              <p>
+                {alerta.mensaje}
+              </p>
+
+            </div>
+
+          </div>
+        ))
+      ) : (
+
+        <div class="empty">
+
+          <div class="empty-icon">
+            ✓
+          </div>
+
+          <h2>
+            Todo está normal
+          </h2>
+
+          <p>
+            No se han detectado valores fuera de los límites establecidos.
+          </p>
+
+        </div>
+
+      )}
+
+    </section>
+
+  </main>
+
+</div>
+```
+
+  </body>
+</html>

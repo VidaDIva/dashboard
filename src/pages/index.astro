@@ -1,0 +1,280 @@
+---
+
+import "../styles/global.css";
+
+const respuesta = await fetch("http://localhost:8080/api/mediciones");
+const mediciones = await respuesta.json();
+
+const ultima = mediciones.length > 0
+? mediciones[mediciones.length - 1]
+: null;
+----
+
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Picur | Dashboard</title>
+  </head>
+
+  <body>
+    <div class="dashboard">
+
+```
+  <aside class="sidebar">
+
+    <div class="logo">
+      <div class="logo-icon">P</div>
+      <span>Picur</span>
+    </div>
+
+    <nav>
+      <a href="/" class="active">
+        <span>▦</span>
+        Dashboard
+      </a>
+
+      <a href="/mediciones">
+        <span>◉</span>
+        Mediciones
+      </a>
+
+      <a href="/alertas">
+        <span>⚠</span>
+        Alertas
+      </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="status">
+        <span class="status-dot"></span>
+        Sistema conectado
+      </div>
+    </div>
+
+  </aside>
+
+  <main class="main">
+
+    <header class="header">
+
+      <div>
+        <p class="eyebrow">MONITOREO</p>
+
+        <h1>Dashboard de vibraciones</h1>
+
+        <p class="subtitle">
+          Visualización de las mediciones recibidas por los sensores.
+        </p>
+      </div>
+
+      <div class="connection">
+        <span class="status-dot"></span>
+        API conectada
+      </div>
+
+    </header>
+
+    {
+      ultima ? (
+
+        <>
+
+          <section class="cards">
+
+            <div class="card">
+              <div class="card-header">
+                <span>Aceleración X</span>
+                <span class="icon blue">X</span>
+              </div>
+
+              <div class="value">
+                {ultima.aceleracionX}
+              </div>
+
+              <div class="unit">
+                m/s²
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <span>Aceleración Y</span>
+                <span class="icon purple">Y</span>
+              </div>
+
+              <div class="value">
+                {ultima.aceleracionY}
+              </div>
+
+              <div class="unit">
+                m/s²
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <span>Aceleración Z</span>
+                <span class="icon green">Z</span>
+              </div>
+
+              <div class="value">
+                {ultima.aceleracionZ}
+              </div>
+
+              <div class="unit">
+                m/s²
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <span>Frecuencia</span>
+                <span class="icon orange">Hz</span>
+              </div>
+
+              <div class="value">
+                {ultima.frecuencia}
+              </div>
+
+              <div class="unit">
+                Hz
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <span>RMS</span>
+                <span class="icon red">≈</span>
+              </div>
+
+              <div class="value">
+                {ultima.rms}
+              </div>
+
+              <div class="unit">
+                m/s²
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <span>Inclinación</span>
+                <span class="icon yellow">↗</span>
+              </div>
+
+              <div class="value">
+                {ultima.inclinacion}
+              </div>
+
+              <div class="unit">
+                grados
+              </div>
+            </div>
+
+          </section>
+
+          <section class="panel">
+
+            <div class="panel-header">
+              <div>
+                <h2>Historial de mediciones</h2>
+
+                <p>
+                  {mediciones.length} mediciones registradas
+                </p>
+              </div>
+            </div>
+
+            <div class="table-container">
+
+              <table>
+
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Aceleración X</th>
+                    <th>Aceleración Y</th>
+                    <th>Aceleración Z</th>
+                    <th>Frecuencia</th>
+                    <th>RMS</th>
+                    <th>Inclinación</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+
+                  {
+                    mediciones.map((medicion, index) => (
+                      <tr>
+
+                        <td class="number">
+                          {index + 1}
+                        </td>
+
+                        <td>
+                          {medicion.aceleracionX}
+                        </td>
+
+                        <td>
+                          {medicion.aceleracionY}
+                        </td>
+
+                        <td>
+                          {medicion.aceleracionZ}
+                        </td>
+
+                        <td>
+                          {medicion.frecuencia} Hz
+                        </td>
+
+                        <td>
+                          {medicion.rms}
+                        </td>
+
+                        <td>
+                          {medicion.inclinacion}°
+                        </td>
+
+                      </tr>
+                    ))}
+                  
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+          </section>
+
+        </>
+
+      ) : (
+
+        <div class="empty">
+
+          <div class="empty-icon">
+            📡
+          </div>
+
+          <h2>
+            No hay mediciones
+          </h2>
+
+          <p>
+            Cuando lleguen datos de los sensores aparecerán aquí.
+          </p>
+
+        </div>
+
+      )
+    }
+
+  </main>
+
+</div>
+
+
+  </body>
+</html>

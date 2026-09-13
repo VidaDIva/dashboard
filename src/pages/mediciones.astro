@@ -1,0 +1,160 @@
+---
+import "../styles/global.css";
+
+const respuesta = await fetch("http://localhost:8080/api/mediciones");
+const mediciones = await respuesta.json();
+----
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Picur | Mediciones</title>
+  </head>
+
+  <body>
+
+```
+<div class="dashboard">
+
+  <aside class="sidebar">
+
+    <div class="logo">
+      <div class="logo-icon">P</div>
+      <span>Picur</span>
+    </div>
+
+    <nav>
+
+      <a href="/">
+        <span>▦</span>
+        Dashboard
+      </a>
+
+      <a href="/mediciones" class="active">
+        <span>◉</span>
+        Mediciones
+      </a>
+
+      <a href="/alertas">
+        <span>⚠</span>
+        Alertas
+      </a>
+
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="status">
+        <span class="status-dot"></span>
+        Sistema conectado
+      </div>
+    </div>
+
+  </aside>
+
+
+  <main class="main">
+
+    <header class="header">
+
+      <div>
+        <p class="eyebrow">MONITOREO</p>
+
+        <h1>Mediciones</h1>
+
+        <p class="subtitle">
+          Historial de mediciones registradas por los sensores.
+        </p>
+      </div>
+
+      <div class="connection">
+        <span class="status-dot"></span>
+        API conectada
+      </div>
+
+    </header>
+
+
+    <section class="panel">
+
+      <div class="panel-header">
+
+        <h2>Historial</h2>
+
+        <p>
+          {mediciones.length} mediciones registradas
+        </p>
+
+      </div>
+
+
+      <div class="table-container">
+
+        <table>
+
+          <thead>
+
+            <tr>
+              <th>#</th>
+              <th>Aceleración X</th>
+              <th>Aceleración Y</th>
+              <th>Aceleración Z</th>
+              <th>Frecuencia</th>
+              <th>RMS</th>
+              <th>Inclinación</th>
+            </tr>
+
+          </thead>
+
+
+          <tbody>
+
+            {mediciones.map((medicion, index) => (
+
+              <tr>
+
+                <td class="number">
+                  {index + 1}
+                </td>
+
+                <td>
+                  {medicion.aceleracionX}
+                </td>
+
+                <td>
+                  {medicion.aceleracionY}
+                </td>
+
+                <td>
+                  {medicion.aceleracionZ}
+                </td>
+
+                <td>
+                  {medicion.frecuencia} Hz
+                </td>
+
+                <td>
+                  {medicion.rms}
+                </td>
+
+                <td>
+                  {medicion.inclinacion}°
+                </td>
+
+              </tr>
+
+            ))}
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+  </main>
+
+</div>
+
+  </body>
+</html>
