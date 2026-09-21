@@ -1,0 +1,129 @@
+---
+import "../styles/global.css";
+
+const registrado = Astro.url.searchParams.get("registrado") === "1";
+---
+
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Picur | Iniciar sesión</title>
+  </head>
+
+  <body class="auth-page">
+
+    <div class="auth-card">
+
+      <div class="auth-logo">
+        <div class="logo-icon">P</div>
+        <span>Picur</span>
+      </div>
+
+      <h1>Iniciar sesión</h1>
+
+      <p class="auth-subtitle">
+        Accede al dashboard de monitoreo
+      </p>
+
+      {
+        registrado && (
+          <div class="auth-success">
+            Cuenta creada correctamente. Inicia sesión con tu correo.
+          </div>
+        )
+      }
+
+      <div id="auth-error" class="auth-error" style="display:none;"></div>
+
+      <form id="login-form" class="auth-form">
+
+        <div class="form-group">
+          <label class="form-label" for="correo">Correo electrónico</label>
+          <input
+            class="form-input"
+            type="email"
+            id="correo"
+            name="correo"
+            placeholder="tucorreo@ejemplo.com"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="contrasena">Contraseña</label>
+          <input
+            class="form-input"
+            type="password"
+            id="contrasena"
+            name="contrasena"
+            placeholder="••••••••"
+            required
+          />
+        </div>
+
+        <button class="btn btn-primary btn-block" type="submit">
+          Entrar
+        </button>
+
+      </form>
+
+      <p class="auth-link">
+        ¿No tienes cuenta?
+        <a href="/registro">Regístrate aquí</a>
+      </p>
+
+    </div>
+
+    <script>
+      import { API_URL, guardarSesion } from "../scripts/api.js";
+
+      const formulario = document.getElementById("login-form");
+      const errorBox = document.getElementById("auth-error");
+      const boton = formulario.querySelector("button");
+
+      // Si ya hay sesión iniciada, ir directo al dashboard
+      if (localStorage.getItem("picur_sesion")) {
+        window.location.replace("/");
+      }
+
+      formulario.addEventListener("submit", async (evento) => {
+        evento.preventDefault();
+
+        errorBox.style.display = "none";
+
+        const datos = {
+          correo: document.getElementById("correo").value.trim(),
+          contrasena: document.getElementById("contrasena").value,
+        };
+
+        boton.disabled = true;
+        boton.textContent = "Ingresando...";
+
+        try {
+          const respuesta = await fetch(`${API_URL}/usuarios/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(datos),
+          });
+
+          const cuerpo = await respuesta.json().catch(() => null);
+
+          if (!respuesta.ok) {
+            throw new Error(cuerpo?.mensaje || "No se pudo iniciar sesión");
+          }
+
+          guardarSesion(cuerpo);
+          window.location.href = "/";
+        } catch (error) {
+          errorBox.textContent = error.message;
+          errorBox.style.display = "block";
+        } finally {
+          boton.disabled = false;
+          boton.textContent = "Entrar";
+        }
+      });
+    </script>
+
+  </body>
+</html>

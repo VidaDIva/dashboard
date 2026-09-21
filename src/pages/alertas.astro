@@ -1,218 +1,140 @@
 ---
-
-import "../styles/global.css";
-
-const respuesta = await fetch("http://localhost:8080/api/mediciones");
-const mediciones = await respuesta.json();
-
-const alertas = [];
-
-for (const medicion of mediciones) {
-if (medicion.rms > 4) {
-alertas.push({
-tipo: "CRITICA",
-titulo: "RMS elevado",
-mensaje: `El valor RMS es ${medicion.rms} m/s²`,
-valor: medicion.rms
-});
-}
-
-if (medicion.frecuencia > 100) {
-alertas.push({
-tipo: "ADVERTENCIA",
-titulo: "Frecuencia elevada",
-mensaje: `La frecuencia alcanzó ${medicion.frecuencia} Hz`,
-valor: medicion.frecuencia
-});
-}
-
-if (Math.abs(medicion.inclinacion) > 10) {
-alertas.push({
-tipo: "ADVERTENCIA",
-titulo: "Inclinación elevada",
-mensaje: `La inclinación alcanzó ${medicion.inclinacion}°`,
-valor: medicion.inclinacion
-});
-}
-}
+import Layout from "../layouts/Layout.astro";
 ---
 
-<html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
-    <title>Picur | Alertas</title>
-  </head>
+<Layout
+  title="Picur | Alertas"
+  active="alertas"
+  eyebrow="SEGURIDAD"
+  heading="Alertas"
+  subtitle="Eventos detectados en las mediciones de los sensores."
+>
 
-  <body>
-    <div class="dashboard">
+  <div id="error-banner" class="error-banner" style="display:none;">
+    <span></span>
+  </div>
 
-```
-  <aside class="sidebar">
+  <section class="alert-summary">
 
-    <div class="logo">
-      <div class="logo-icon">P</div>
-      <span>Picur</span>
+    <div class="summary-card">
+      <span class="summary-label">Total de alertas</span>
+      <strong id="total-alertas">0</strong>
     </div>
 
-    <nav>
-      <a href="/">
-        <span>▦</span>
-        Dashboard
-      </a>
-
-      <a href="/mediciones">
-        <span>◉</span>
-        Mediciones
-      </a>
-
-      <a href="/alertas" class="active">
-        <span>⚠</span>
-        Alertas
-      </a>
-    </nav>
-
-    <div class="sidebar-bottom">
-      <div class="status">
-        <span class="status-dot"></span>
-        Sistema conectado
-      </div>
+    <div class="summary-card critical">
+      <span class="summary-label">Críticas</span>
+      <strong id="total-criticas">0</strong>
     </div>
 
-  </aside>
+    <div class="summary-card warning">
+      <span class="summary-label">Advertencias</span>
+      <strong id="total-advertencias">0</strong>
+    </div>
 
-  <main class="main">
+  </section>
 
-    <header class="header">
+  <section class="alerts-container" id="alertas-contenedor" style="display:none;"></section>
 
-      <div>
-        <p class="eyebrow">SEGURIDAD</p>
+  <div id="alertas-vacio" class="empty" style="display:flex;">
+    <div class="empty-icon">✓</div>
+    <h2>Todo está normal</h2>
+    <p>No se han detectado valores fuera de los límites establecidos.</p>
+  </div>
 
-        <h1>Alertas</h1>
+  <script>
+    import { obtenerMediciones, formatearNumero } from "../scripts/api.js";
 
-        <p class="subtitle">
-          Eventos detectados en las mediciones de los sensores.
-        </p>
-      </div>
+    const contenedor = document.getElementById("alertas-contenedor");
+    const vacio = document.getElementById("alertas-vacio");
+    const total = document.getElementById("total-alertas");
+    const criticas = document.getElementById("total-criticas");
+    const advertencias = document.getElementById("total-advertencias");
 
-      <div class="connection">
-        <span class="status-dot"></span>
-        API conectada
-      </div>
+    function calcularAlertas(mediciones) {
+      const alertas = [];
 
-    </header>
+      for (const medicion of mediciones) {
+        if (medicion.rms > 4) {
+          alertas.push({
+            tipo: "CRITICA",
+            titulo: "RMS elevado",
+            mensaje: `El valor RMS es ${formatearNumero(medicion.rms)} m/s²`,
+            valor: formatearNumero(medicion.rms),
+          });
+        }
 
-    <section class="alert-summary">
+        if (medicion.frecuencia > 100) {
+          alertas.push({
+            tipo: "ADVERTENCIA",
+            titulo: "Frecuencia elevada",
+            mensaje: `La frecuencia alcanzó ${formatearNumero(medicion.frecuencia)} Hz`,
+            valor: formatearNumero(medicion.frecuencia),
+          });
+        }
 
-      <div class="summary-card">
-        <span class="summary-label">
-          Total de alertas
-        </span>
+        if (Math.abs(medicion.inclinacion) > 10) {
+          alertas.push({
+            tipo: "ADVERTENCIA",
+            titulo: "Inclinación elevada",
+            mensaje: `La inclinación alcanzó ${formatearNumero(medicion.inclinacion)}°`,
+            valor: formatearNumero(medicion.inclinacion),
+          });
+        }
+      }
 
-        <strong>
-          {alertas.length}
-        </strong>
-      </div>
+      return alertas;
+    }
 
-      <div class="summary-card critical">
-        <span class="summary-label">
-          Críticas
-        </span>
+    function render(mediciones) {
+      const alertas = calcularAlertas(mediciones || []);
 
-        <strong>
-          {
-            alertas.filter(
-              (alerta) => alerta.tipo === "CRITICA"
-            ).length
-          }
-        </strong>
-      </div>
+      total.textContent = alertas.length;
+      criticas.textContent = alertas.filter((a) => a.tipo === "CRITICA").length;
+      advertencias.textContent = alertas.filter((a) => a.tipo === "ADVERTENCIA").length;
 
-      <div class="summary-card warning">
-        <span class="summary-label">
-          Advertencias
-        </span>
+      if (alertas.length === 0) {
+        contenedor.style.display = "none";
+        vacio.style.display = "flex";
+        return;
+      }
 
-        <strong>
-          {
-            alertas.filter(
-              (alerta) => alerta.tipo === "ADVERTENCIA"
-            ).length
-          }
-        </strong>
-      </div>
+      contenedor.style.display = "flex";
+      vacio.style.display = "none";
 
-    </section>
-
-    <section class="alerts-container">
-
-      {alertas.length > 0 ? (
-        alertas.map((alerta) => (
-          <div
-            class:list={[
-              "alert",
-              alerta.tipo === "CRITICA"
-                ? "alert-critical"
-                : "alert-warning"
-            ]}
-          >
-
-            <div class="alert-icon">
-              {alerta.tipo === "CRITICA" ? "!" : "⚠"}
-            </div>
-
-            <div class="alert-content">
-
-              <div class="alert-top">
-
-                <span class="alert-type">
-                  {alerta.tipo}
-                </span>
-
-                <span class="alert-value">
-                  {alerta.valor}
-                </span>
-
+      contenedor.innerHTML = alertas
+        .map(
+          (alerta) => `
+            <div class="alert ${alerta.tipo === "CRITICA" ? "alert-critical" : "alert-warning"}">
+              <div class="alert-icon">${alerta.tipo === "CRITICA" ? "!" : "⚠"}</div>
+              <div class="alert-content">
+                <div class="alert-top">
+                  <span class="alert-type">${alerta.tipo}</span>
+                  <span class="alert-value">${alerta.valor}</span>
+                </div>
+                <h2>${alerta.titulo}</h2>
+                <p>${alerta.mensaje}</p>
               </div>
-
-              <h2>
-                {alerta.titulo}
-              </h2>
-
-              <p>
-                {alerta.mensaje}
-              </p>
-
             </div>
+          `
+        )
+        .join("");
+    }
 
-          </div>
-        ))
-      ) : (
+    async function cargar() {
+      try {
+        const mediciones = await obtenerMediciones();
+        window.marcarConexion(true);
+        render(mediciones);
+      } catch (error) {
+        window.marcarConexion(
+          false,
+          error.message || "Se perdió la conexión con la API"
+        );
+      }
+    }
 
-        <div class="empty">
+    cargar();
+    setInterval(cargar, 5000);
+  </script>
 
-          <div class="empty-icon">
-            ✓
-          </div>
-
-          <h2>
-            Todo está normal
-          </h2>
-
-          <p>
-            No se han detectado valores fuera de los límites establecidos.
-          </p>
-
-        </div>
-
-      )}
-
-    </section>
-
-  </main>
-
-</div>
-```
-
-  </body>
-</html>
+</Layout>

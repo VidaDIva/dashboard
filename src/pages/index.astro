@@ -1,280 +1,321 @@
 ---
+import Layout from "../layouts/Layout.astro";
+---
 
-import "../styles/global.css";
+<Layout
+  title="Picur | Dashboard"
+  active="dashboard"
+  eyebrow="MONITOREO"
+  heading="Dashboard de vibraciones"
+  subtitle="Visualización de las mediciones recibidas por los sensores."
+>
 
-const respuesta = await fetch("http://localhost:8080/api/mediciones");
-const mediciones = await respuesta.json();
+  <div id="error-banner" class="error-banner" style="display:none;">
+    <span></span>
+  </div>
 
-const ultima = mediciones.length > 0
-? mediciones[mediciones.length - 1]
-: null;
-----
+  <section class="cards">
 
-<html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
-    <title>Picur | Dashboard</title>
-  </head>
-
-  <body>
-    <div class="dashboard">
-
-```
-  <aside class="sidebar">
-
-    <div class="logo">
-      <div class="logo-icon">P</div>
-      <span>Picur</span>
-    </div>
-
-    <nav>
-      <a href="/" class="active">
-        <span>▦</span>
-        Dashboard
-      </a>
-
-      <a href="/mediciones">
-        <span>◉</span>
-        Mediciones
-      </a>
-
-      <a href="/alertas">
-        <span>⚠</span>
-        Alertas
-      </a>
-    </nav>
-
-    <div class="sidebar-bottom">
-      <div class="status">
-        <span class="status-dot"></span>
-        Sistema conectado
+    <div class="card">
+      <div class="card-header">
+        <span>Aceleración X</span>
+        <span class="icon blue">X</span>
       </div>
+      <div class="value" id="valor-ax">—</div>
+      <div class="unit">m/s²</div>
     </div>
 
-  </aside>
+    <div class="card">
+      <div class="card-header">
+        <span>Aceleración Y</span>
+        <span class="icon purple">Y</span>
+      </div>
+      <div class="value" id="valor-ay">—</div>
+      <div class="unit">m/s²</div>
+    </div>
 
-  <main class="main">
+    <div class="card">
+      <div class="card-header">
+        <span>Aceleración Z</span>
+        <span class="icon green">Z</span>
+      </div>
+      <div class="value" id="valor-az">—</div>
+      <div class="unit">m/s²</div>
+    </div>
 
-    <header class="header">
+    <div class="card">
+      <div class="card-header">
+        <span>Frecuencia</span>
+        <span class="icon orange">Hz</span>
+      </div>
+      <div class="value" id="valor-frecuencia">—</div>
+      <div class="unit">Hz</div>
+    </div>
 
+    <div class="card">
+      <div class="card-header">
+        <span>RMS</span>
+        <span class="icon red">≈</span>
+      </div>
+      <div class="value" id="valor-rms">—</div>
+      <div class="unit">m/s²</div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span>Inclinación</span>
+        <span class="icon yellow">↗</span>
+      </div>
+      <div class="value" id="valor-inclinacion">—</div>
+      <div class="unit">grados</div>
+    </div>
+
+  </section>
+
+  <section class="panel" id="panel-grafico" style="display:none;">
+
+    <div class="panel-header">
       <div>
-        <p class="eyebrow">MONITOREO</p>
-
-        <h1>Dashboard de vibraciones</h1>
-
-        <p class="subtitle">
-          Visualización de las mediciones recibidas por los sensores.
-        </p>
+        <h2>Evolución de aceleración</h2>
+        <p>Últimas 10 mediciones</p>
       </div>
-
-      <div class="connection">
-        <span class="status-dot"></span>
-        API conectada
+      <div class="chart-legend">
+        <span class="legend-item"><span class="legend-dot blue"></span>X</span>
+        <span class="legend-item"><span class="legend-dot purple"></span>Y</span>
+        <span class="legend-item"><span class="legend-dot green"></span>Z</span>
       </div>
+    </div>
 
-    </header>
+    <div class="chart-container">
+      <canvas id="grafico-lineas" class="chart-canvas"></canvas>
+    </div>
 
-    {
-      ultima ? (
+  </section>
 
-        <>
+  <section class="panel" id="panel-historial">
 
-          <section class="cards">
+    <div class="panel-header">
+      <div>
+        <h2>Historial de mediciones</h2>
+        <p id="total-mediciones">0 mediciones registradas</p>
+      </div>
+    </div>
 
-            <div class="card">
-              <div class="card-header">
-                <span>Aceleración X</span>
-                <span class="icon blue">X</span>
-              </div>
+    <div class="table-container">
 
-              <div class="value">
-                {ultima.aceleracionX}
-              </div>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Aceleración X</th>
+            <th>Aceleración Y</th>
+            <th>Aceleración Z</th>
+            <th>Frecuencia</th>
+            <th>RMS</th>
+            <th>Inclinación</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-mediciones"></tbody>
+      </table>
 
-              <div class="unit">
-                m/s²
-              </div>
-            </div>
+    </div>
 
-            <div class="card">
-              <div class="card-header">
-                <span>Aceleración Y</span>
-                <span class="icon purple">Y</span>
-              </div>
+  </section>
 
-              <div class="value">
-                {ultima.aceleracionY}
-              </div>
+  <div id="empty-mediciones" class="empty" style="display:none;">
+    <div class="empty-icon">📡</div>
+    <h2>No hay mediciones</h2>
+    <p>Cuando lleguen datos de los sensores aparecerán aquí.</p>
+  </div>
 
-              <div class="unit">
-                m/s²
-              </div>
-            </div>
+  <script>
+    import { obtenerMediciones, formatearNumero } from "../scripts/api.js";
 
-            <div class="card">
-              <div class="card-header">
-                <span>Aceleración Z</span>
-                <span class="icon green">Z</span>
-              </div>
+    const LIMITE = 10;
 
-              <div class="value">
-                {ultima.aceleracionZ}
-              </div>
+    const CAMPOS = [
+      { id: "valor-ax", obtener: (m) => m.aceleracionX },
+      { id: "valor-ay", obtener: (m) => m.aceleracionY },
+      { id: "valor-az", obtener: (m) => m.aceleracionZ },
+      { id: "valor-frecuencia", obtener: (m) => m.frecuencia },
+      { id: "valor-rms", obtener: (m) => m.rms },
+      { id: "valor-inclinacion", obtener: (m) => m.inclinacion },
+    ];
 
-              <div class="unit">
-                m/s²
-              </div>
-            </div>
+    const SERIES = [
+      { clave: "aceleracionX", color: "#2563eb" },
+      { clave: "aceleracionY", color: "#7c3aed" },
+      { clave: "aceleracionZ", color: "#059669" },
+    ];
 
-            <div class="card">
-              <div class="card-header">
-                <span>Frecuencia</span>
-                <span class="icon orange">Hz</span>
-              </div>
+    const tabla = document.getElementById("tabla-mediciones");
+    const total = document.getElementById("total-mediciones");
+    const panel = document.getElementById("panel-historial");
+    const vacio = document.getElementById("empty-mediciones");
+    const panelGrafico = document.getElementById("panel-grafico");
+    const grafico = document.getElementById("grafico-lineas");
 
-              <div class="value">
-                {ultima.frecuencia}
-              </div>
+    function pintarGrafico(mediciones) {
+      if (!grafico || !panelGrafico) return;
 
-              <div class="unit">
-                Hz
-              </div>
-            </div>
+      const datos = mediciones.slice(-LIMITE);
+      if (datos.length === 0) {
+        panelGrafico.style.display = "none";
+        return;
+      }
+      panelGrafico.style.display = "block";
 
-            <div class="card">
-              <div class="card-header">
-                <span>RMS</span>
-                <span class="icon red">≈</span>
-              </div>
+      const ratio = window.devicePixelRatio || 1;
+      const ancho = grafico.parentElement.clientWidth || 600;
+      const alto = 300;
+      grafico.style.height = `${alto}px`;
+      grafico.width = ancho * ratio;
+      grafico.height = alto * ratio;
+      const ctx = grafico.getContext("2d");
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      ctx.clearRect(0, 0, ancho, alto);
 
-              <div class="value">
-                {ultima.rms}
-              </div>
+      const margenIzq = 52;
+      const margenDer = 16;
+      const margenSup = 24;
+      const margenInf = 34;
+      const graficableAncho = ancho - margenIzq - margenDer;
+      const graficableAlto = alto - margenSup - margenInf;
 
-              <div class="unit">
-                m/s²
-              </div>
-            </div>
+      let min = Infinity;
+      let max = -Infinity;
+      for (const m of datos) {
+        for (const s of SERIES) {
+          const v = Number(m[s.clave]);
+          if (!Number.isFinite(v)) continue;
+          if (v < min) min = v;
+          if (v > max) max = v;
+        }
+      }
 
-            <div class="card">
-              <div class="card-header">
-                <span>Inclinación</span>
-                <span class="icon yellow">↗</span>
-              </div>
+      if (!Number.isFinite(min)) return;
 
-              <div class="value">
-                {ultima.inclinacion}
-              </div>
+      const rango = max - min || 1;
+      min -= rango * 0.12;
+      max += rango * 0.12;
 
-              <div class="unit">
-                grados
-              </div>
-            </div>
+      const x = (i) =>
+        margenIzq + (graficableAncho * i) / (datos.length - 1);
+      const y = (v) =>
+        margenSup + graficableAlto - ((Number(v) - min) / (max - min)) * graficableAlto;
 
-          </section>
+      ctx.font = "11px Inter, Arial, sans-serif";
+      ctx.fillStyle = "#9ca3af";
+      ctx.strokeStyle = "#edf0f4";
+      ctx.lineWidth = 1;
 
-          <section class="panel">
+      for (let i = 0; i <= 4; i++) {
+        const valor = min + ((max - min) * i) / 4;
+        const py = margenSup + (graficableAlto * (4 - i)) / 4;
+        ctx.beginPath();
+        ctx.moveTo(margenIzq, py);
+        ctx.lineTo(ancho - margenDer, py);
+        ctx.stroke();
+        ctx.textAlign = "right";
+        ctx.fillText(valor.toFixed(1), margenIzq - 8, py + 4);
+      }
 
-            <div class="panel-header">
-              <div>
-                <h2>Historial de mediciones</h2>
+      const indicesEtiqueta =
+        datos.length > 6
+          ? [0, Math.floor((datos.length - 1) / 2), datos.length - 1]
+          : datos.map((_, i) => i);
 
-                <p>
-                  {mediciones.length} mediciones registradas
-                </p>
-              </div>
-            </div>
+      ctx.textAlign = "center";
+      for (const i of indicesEtiqueta) {
+        const etiqueta = datos[i].fechaRegistro
+          ? new Date(datos[i].fechaRegistro).toLocaleTimeString("es-CO", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : `#${i + 1}`;
+        ctx.fillText(etiqueta, x(i), alto - 10);
+      }
 
-            <div class="table-container">
+      for (const s of SERIES) {
+        ctx.strokeStyle = s.color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        datos.forEach((m, i) => {
+          const px = x(i);
+          const py = y(m[s.clave]);
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        });
+        ctx.stroke();
 
-              <table>
-
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Aceleración X</th>
-                    <th>Aceleración Y</th>
-                    <th>Aceleración Z</th>
-                    <th>Frecuencia</th>
-                    <th>RMS</th>
-                    <th>Inclinación</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-
-                  {
-                    mediciones.map((medicion, index) => (
-                      <tr>
-
-                        <td class="number">
-                          {index + 1}
-                        </td>
-
-                        <td>
-                          {medicion.aceleracionX}
-                        </td>
-
-                        <td>
-                          {medicion.aceleracionY}
-                        </td>
-
-                        <td>
-                          {medicion.aceleracionZ}
-                        </td>
-
-                        <td>
-                          {medicion.frecuencia} Hz
-                        </td>
-
-                        <td>
-                          {medicion.rms}
-                        </td>
-
-                        <td>
-                          {medicion.inclinacion}°
-                        </td>
-
-                      </tr>
-                    ))}
-                  
-
-                </tbody>
-
-              </table>
-
-            </div>
-
-          </section>
-
-        </>
-
-      ) : (
-
-        <div class="empty">
-
-          <div class="empty-icon">
-            📡
-          </div>
-
-          <h2>
-            No hay mediciones
-          </h2>
-
-          <p>
-            Cuando lleguen datos de los sensores aparecerán aquí.
-          </p>
-
-        </div>
-
-      )
+        datos.forEach((m, i) => {
+          ctx.beginPath();
+          ctx.arc(x(i), y(m[s.clave]), 3, 0, Math.PI * 2);
+          ctx.fillStyle = s.color;
+          ctx.fill();
+        });
+      }
     }
 
-  </main>
+    function render(mediciones) {
+      if (!mediciones || mediciones.length === 0) {
+        panel.style.display = "none";
+        panelGrafico.style.display = "none";
+        vacio.style.display = "block";
+        return;
+      }
 
-</div>
+      panel.style.display = "block";
+      vacio.style.display = "none";
 
+      const ultima = mediciones[mediciones.length - 1];
 
-  </body>
-</html>
+      for (const campo of CAMPOS) {
+        const elemento = document.getElementById(campo.id);
+        if (elemento) {
+          elemento.textContent = formatearNumero(campo.obtener(ultima));
+        }
+      }
+
+      total.textContent = `${mediciones.length} mediciones registradas`;
+
+      const ultimas = mediciones.slice(-LIMITE);
+      const inicio = mediciones.length - ultimas.length + 1;
+
+      tabla.innerHTML = ultimas
+        .map(
+          (m, index) => `
+            <tr>
+              <td class="number">${inicio + index}</td>
+              <td>${formatearNumero(m.aceleracionX)}</td>
+              <td>${formatearNumero(m.aceleracionY)}</td>
+              <td>${formatearNumero(m.aceleracionZ)}</td>
+              <td>${formatearNumero(m.frecuencia)} Hz</td>
+              <td>${formatearNumero(m.rms)}</td>
+              <td>${formatearNumero(m.inclinacion)}°</td>
+            </tr>
+          `
+        )
+        .join("");
+
+      pintarGrafico(mediciones);
+    }
+
+    async function cargar() {
+      try {
+        const mediciones = await obtenerMediciones();
+        window.marcarConexion(true);
+        render(mediciones);
+      } catch (error) {
+        window.marcarConexion(
+          false,
+          error.message || "Se perdió la conexión con la API"
+        );
+      }
+    }
+
+    cargar();
+    setInterval(cargar, 5000);
+  </script>
+
+</Layout>

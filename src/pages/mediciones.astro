@@ -1,160 +1,107 @@
 ---
-import "../styles/global.css";
+import Layout from "../layouts/Layout.astro";
+---
 
-const respuesta = await fetch("http://localhost:8080/api/mediciones");
-const mediciones = await respuesta.json();
-----
-<html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
-    <title>Picur | Mediciones</title>
-  </head>
+<Layout
+  title="Picur | Mediciones"
+  active="mediciones"
+  eyebrow="MONITOREO"
+  heading="Mediciones"
+  subtitle="Historial de mediciones registradas por los sensores."
+>
 
-  <body>
+  <div id="error-banner" class="error-banner" style="display:none;">
+    <span></span>
+  </div>
 
-```
-<div class="dashboard">
+  <section class="panel" id="panel-historial">
 
-  <aside class="sidebar">
-
-    <div class="logo">
-      <div class="logo-icon">P</div>
-      <span>Picur</span>
-    </div>
-
-    <nav>
-
-      <a href="/">
-        <span>▦</span>
-        Dashboard
-      </a>
-
-      <a href="/mediciones" class="active">
-        <span>◉</span>
-        Mediciones
-      </a>
-
-      <a href="/alertas">
-        <span>⚠</span>
-        Alertas
-      </a>
-
-    </nav>
-
-    <div class="sidebar-bottom">
-      <div class="status">
-        <span class="status-dot"></span>
-        Sistema conectado
-      </div>
-    </div>
-
-  </aside>
-
-
-  <main class="main">
-
-    <header class="header">
-
+    <div class="panel-header">
       <div>
-        <p class="eyebrow">MONITOREO</p>
-
-        <h1>Mediciones</h1>
-
-        <p class="subtitle">
-          Historial de mediciones registradas por los sensores.
-        </p>
-      </div>
-
-      <div class="connection">
-        <span class="status-dot"></span>
-        API conectada
-      </div>
-
-    </header>
-
-
-    <section class="panel">
-
-      <div class="panel-header">
-
         <h2>Historial</h2>
-
-        <p>
-          {mediciones.length} mediciones registradas
-        </p>
-
+        <p id="total-mediciones">0 mediciones registradas</p>
       </div>
+    </div>
 
+    <div class="table-container">
 
-      <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Aceleración X</th>
+            <th>Aceleración Y</th>
+            <th>Aceleración Z</th>
+            <th>Frecuencia</th>
+            <th>RMS</th>
+            <th>Inclinación</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-mediciones"></tbody>
+      </table>
 
-        <table>
+    </div>
 
-          <thead>
+  </section>
 
+  <div id="empty-mediciones" class="empty" style="display:none;">
+    <div class="empty-icon">📡</div>
+    <h2>No hay mediciones</h2>
+    <p>Cuando lleguen datos de los sensores aparecerán aquí.</p>
+  </div>
+
+  <script>
+    import { obtenerMediciones, formatearNumero } from "../scripts/api.js";
+
+    const tabla = document.getElementById("tabla-mediciones");
+    const total = document.getElementById("total-mediciones");
+    const panel = document.getElementById("panel-historial");
+    const vacio = document.getElementById("empty-mediciones");
+
+    function render(mediciones) {
+      if (!mediciones || mediciones.length === 0) {
+        panel.style.display = "none";
+        vacio.style.display = "block";
+        return;
+      }
+
+      panel.style.display = "block";
+      vacio.style.display = "none";
+
+      total.textContent = `${mediciones.length} mediciones registradas`;
+
+      tabla.innerHTML = mediciones
+        .map(
+          (m, index) => `
             <tr>
-              <th>#</th>
-              <th>Aceleración X</th>
-              <th>Aceleración Y</th>
-              <th>Aceleración Z</th>
-              <th>Frecuencia</th>
-              <th>RMS</th>
-              <th>Inclinación</th>
+              <td class="number">${index + 1}</td>
+              <td>${formatearNumero(m.aceleracionX)}</td>
+              <td>${formatearNumero(m.aceleracionY)}</td>
+              <td>${formatearNumero(m.aceleracionZ)}</td>
+              <td>${formatearNumero(m.frecuencia)} Hz</td>
+              <td>${formatearNumero(m.rms)}</td>
+              <td>${formatearNumero(m.inclinacion)}°</td>
             </tr>
+          `
+        )
+        .join("");
+    }
 
-          </thead>
+    async function cargar() {
+      try {
+        const mediciones = await obtenerMediciones();
+        window.marcarConexion(true);
+        render(mediciones);
+      } catch (error) {
+        window.marcarConexion(
+          false,
+          error.message || "Se perdió la conexión con la API"
+        );
+      }
+    }
 
+    cargar();
+    setInterval(cargar, 5000);
+  </script>
 
-          <tbody>
-
-            {mediciones.map((medicion, index) => (
-
-              <tr>
-
-                <td class="number">
-                  {index + 1}
-                </td>
-
-                <td>
-                  {medicion.aceleracionX}
-                </td>
-
-                <td>
-                  {medicion.aceleracionY}
-                </td>
-
-                <td>
-                  {medicion.aceleracionZ}
-                </td>
-
-                <td>
-                  {medicion.frecuencia} Hz
-                </td>
-
-                <td>
-                  {medicion.rms}
-                </td>
-
-                <td>
-                  {medicion.inclinacion}°
-                </td>
-
-              </tr>
-
-            ))}
-
-          </tbody>
-
-        </table>
-
-      </div>
-
-    </section>
-
-  </main>
-
-</div>
-
-  </body>
-</html>
+</Layout>

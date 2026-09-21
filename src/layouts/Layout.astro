@@ -1,0 +1,143 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title?: string;
+  active?: "dashboard" | "mediciones" | "alertas";
+  eyebrow?: string;
+  heading?: string;
+  subtitle?: string;
+}
+
+const {
+  title = "Picur | Dashboard",
+  active = "dashboard",
+  eyebrow = "MONITOREO",
+  heading = "Dashboard",
+  subtitle = "",
+} = Astro.props;
+---
+
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>{title}</title>
+  </head>
+
+  <body>
+    <div class="dashboard">
+
+      <aside class="sidebar">
+
+        <div class="logo">
+          <div class="logo-icon">P</div>
+          <span>Picur</span>
+        </div>
+
+        <nav>
+          <a href="/" class:list={active === "dashboard" && "active"}>
+            <span>▦</span>
+            Dashboard
+          </a>
+
+          <a href="/mediciones" class:list={active === "mediciones" && "active"}>
+            <span>◉</span>
+            Mediciones
+          </a>
+
+          <a href="/alertas" class:list={active === "alertas" && "active"}>
+            <span>⚠</span>
+            Alertas
+          </a>
+        </nav>
+
+        <div class="sidebar-bottom">
+          <div id="user-name" class="user-greeting"></div>
+
+          <div class="status">
+            <span class="status-dot"></span>
+            Sistema conectado
+          </div>
+
+          <button id="btn-salir" class="btn-salir" type="button">
+            Salir
+          </button>
+        </div>
+
+      </aside>
+
+      <main class="main">
+
+        <header class="header">
+
+          <div>
+            <p class="eyebrow">{eyebrow}</p>
+
+            <h1>{heading}</h1>
+
+            <p class="subtitle">
+              {subtitle}
+            </p>
+          </div>
+
+          <div class="connection" id="connection-status">
+            <span id="conn-dot" class="status-dot"></span>
+            <span id="conn-text">API conectada</span>
+          </div>
+
+        </header>
+
+        <slot />
+
+      </main>
+
+    </div>
+
+    <script>
+      import { cerrarSesion, obtenerSesion } from "../scripts/api.js";
+
+      const sesion = obtenerSesion();
+
+      // Guard de sesión: sin sesión → login
+      if (!sesion) {
+        window.location.replace("/login");
+      }
+
+      const saludar = document.getElementById("user-name");
+      if (saludar && sesion) {
+        saludar.textContent = sesion.nombre
+          ? `Hola, ${sesion.nombre}`
+          : "Sesión iniciada";
+      }
+
+      const botonSalir = document.getElementById("btn-salir");
+      if (botonSalir) {
+        botonSalir.addEventListener("click", () => {
+          cerrarSesion();
+          window.location.href = "/login";
+        });
+      }
+
+      // Helper compartido para actualizar el estado de conexión de la API
+      window.marcarConexion = (ok, mensaje = "Se perdió la conexión con la API") => {
+        const punto = document.getElementById("conn-dot");
+        const texto = document.getElementById("conn-text");
+        const estado = document.getElementById("connection-status");
+
+        if (punto) punto.className = "status-dot " + (ok ? "ok" : "bad");
+        if (texto) texto.textContent = ok ? "API conectada" : "Sin conexión";
+        if (estado) estado.className = "connection " + (ok ? "online" : "offline");
+
+        const banner = document.getElementById("error-banner");
+        if (banner) {
+          banner.style.display = ok ? "none" : "block";
+          if (!ok) {
+            const textoBanner = banner.querySelector("span");
+            if (textoBanner) textoBanner.textContent = mensaje;
+          }
+        }
+      };
+    </script>
+  </body>
+</html>
