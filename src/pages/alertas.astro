@@ -35,6 +35,12 @@ import Layout from "../layouts/Layout.astro";
 
   <section class="alerts-container" id="alertas-contenedor" style="display:none;"></section>
 
+  <div class="pagination" id="paginacion-alertas" style="display:none;">
+    <button id="btn-anterior" class="pag-btn" type="button">← Anterior</button>
+    <span id="pagina-info" class="pag-info">Página 1 de 1</span>
+    <button id="btn-siguiente" class="pag-btn" type="button">Siguiente →</button>
+  </div>
+
   <div id="alertas-vacio" class="empty" style="display:flex;">
     <div class="empty-icon">✓</div>
     <h2>Todo está normal</h2>
@@ -42,87 +48,139 @@ import Layout from "../layouts/Layout.astro";
   </div>
 
   <script>
-    import { obtenerMediciones, formatearNumero } from "../scripts/api.js";
+    import {
+      obtenerMediciones,
+      obtenerResumen,
+      conectarWebSocket,
+      formatearNumero,
+    } from "../scripts/api.js";
+
+    const TAMANO = 20;
 
     const contenedor = document.getElementById("alertas-contenedor");
     const vacio = document.getElementById("alertas-vacio");
+    const paginacion = document.getElementById("paginacion-alertas");
+    const btnAnterior = document.getElementById("btn-anterior");
+    const btnSiguiente = document.getElementById("btn-siguiente");
+    const paginaInfo = document.getElementById("pagina-info");
     const total = document.getElementById("total-alertas");
     const criticas = document.getElementById("total-criticas");
     const advertencias = document.getElementById("total-advertencias");
 
-    function calcularAlertas(mediciones) {
-      const alertas = [];
+    let pagina = 0;
+    let totalAlertas = 0;
+    let criticasTotal = 0;
+    let advertenciasTotal = 0;
+    let totalPaginas = 0;
+    let mediciones = [];
+    let wsEnLinea = false;
 
-      for (const medicion of mediciones) {
-        if (medicion.rms > 4) {
-          alertas.push({
-            tipo: "CRITICA",
-            titulo: "RMS elevado",
-            mensaje: `El valor RMS es ${formatearNumero(medicion.rms)} m/s²`,
-            valor: formatearNumero(medicion.rms),
-          });
-        }
+    function esAlerta(medicion) {
+      const estado = String(medicion.estado || "").toUpperCase();
+      return (
+        estado === "ANOMALA" ||
+        estado === "ANOMALIA" ||
+        estado === "PRECAUCION"
+      );
+    }
 
-        if (medicion.frecuencia > 100) {
-          alertas.push({
-            tipo: "ADVERTENCIA",
-            titulo: "Frecuencia elevada",
-            mensaje: `La frecuencia alcanzó ${formatearNumero(medicion.frecuencia)} Hz`,
-            valor: formatearNumero(medicion.frecuencia),
-          });
-        }
+    function tarjetaAlerta(medicion) {
+      const estado = String(medicion.estado || "").toUpperCase();
+      const tipo = estado === "PRECAUCION" ? "ADVERTENCIA" : "CRITICA";
+      const indice = formatearNumero(medicion.indiceAnomalia);
 
-        if (Math.abs(medicion.inclinacion) > 10) {
-          alertas.push({
-            tipo: "ADVERTENCIA",
-            titulo: "Inclinación elevada",
-            mensaje: `La inclinación alcanzó ${formatearNumero(medicion.inclinacion)}°`,
-            valor: formatearNumero(medicion.inclinacion),
-          });
-        }
-      }
+      const vib = Number(medicion.vibracion);
+      const umbral = Number(medicion.umbral);
+      const hayUmbrales = Number.isFinite(vib) && Number.isFinite(umbral);
 
-      return alertas;
+      const titulo =
+        tipo === "CRITICA"
+          ? "Vibración anómala"
+          : "Nivel de precaución";
+
+      const mensaje = hayUmbrales
+        ? tipo === "CRITICA"
+            ? `La vibración (${formatearNumero(vib)}) superó el umbral dinámico (${formatearNumero(umbral)}).`
+            : `Nivel de precaución: vibración (${formatearNumero(vib)}) frente al umbral dinámico (${formatearNumero(umbral)}).`
+        : tipo === "CRITICA"
+            ? `El sistema detectó un comportamiento anómalo con índice ${indice}.`
+            : `La medición está cerca de superar los límites (índice ${indice}).`;
+
+      return `
+        <div class="alert ${tipo === "CRITICA" ? "alert-critical" : "alert-warning"}">
+          <div class="alert-icon">${tipo === "CRITICA" ? "!" : "⚠"}</div>
+          <div class="alert-content">
+            <div class="alert-top">
+              <span class="alert-type">${tipo}</span>
+              <span class="alert-value">${indice}</span>
+            </div>
+            <h2>${titulo}</h2>
+            <p>${mensaje}</p>
+          </div>
+        </div>
+      `;
+    }
+
+    function actualizarContadores() {
+      total.textContent = totalAlertas;
+      criticas.textContent = criticasTotal;
+      advertencias.textContent = advertenciasTotal;
     }
 
     function render(mediciones) {
-      const alertas = calcularAlertas(mediciones || []);
+      actualizarContadores();
 
-      total.textContent = alertas.length;
-      criticas.textContent = alertas.filter((a) => a.tipo === "CRITICA").length;
-      advertencias.textContent = alertas.filter((a) => a.tipo === "ADVERTENCIA").length;
-
-      if (alertas.length === 0) {
+      if (!mediciones || mediciones.length === 0) {
         contenedor.style.display = "none";
+        paginacion.style.display = "none";
         vacio.style.display = "flex";
         return;
       }
 
       contenedor.style.display = "flex";
+      paginacion.style.display = "flex";
       vacio.style.display = "none";
 
-      contenedor.innerHTML = alertas
-        .map(
-          (alerta) => `
-            <div class="alert ${alerta.tipo === "CRITICA" ? "alert-critical" : "alert-warning"}">
-              <div class="alert-icon">${alerta.tipo === "CRITICA" ? "!" : "⚠"}</div>
-              <div class="alert-content">
-                <div class="alert-top">
-                  <span class="alert-type">${alerta.tipo}</span>
-                  <span class="alert-value">${alerta.valor}</span>
-                </div>
-                <h2>${alerta.titulo}</h2>
-                <p>${alerta.mensaje}</p>
-              </div>
-            </div>
-          `
-        )
-        .join("");
+      contenedor.innerHTML = mediciones.map(tarjetaAlerta).join("");
+
+      paginaInfo.textContent =
+        `Página ${pagina + 1} de ${Math.max(totalPaginas, 1)}`;
+      btnAnterior.disabled = pagina <= 0;
+      btnSiguiente.disabled = pagina >= totalPaginas - 1;
+    }
+
+    async function cargarResumen() {
+      try {
+        const r = await obtenerResumen();
+        criticasTotal = r.anomalas || 0;
+        advertenciasTotal = r.precaucion || 0;
+        totalAlertas = criticasTotal + advertenciasTotal;
+        actualizarContadores();
+      } catch (error) {
+        window.marcarConexion(
+          false,
+          error.message || "Se perdió la conexión con la API"
+        );
+      }
     }
 
     async function cargar() {
       try {
-        const mediciones = await obtenerMediciones();
+        const [datos, resumen] = await Promise.all([
+          obtenerMediciones({
+            estado: "ANOMALA,ANOMALIA,PRECAUCION",
+            pagina,
+            tamano: TAMANO,
+          }),
+          obtenerResumen(),
+        ]);
+
+        criticasTotal = resumen.anomalas || 0;
+        advertenciasTotal = resumen.precaucion || 0;
+        totalAlertas = criticasTotal + advertenciasTotal;
+        totalPaginas = datos.totalPages || 0;
+        mediciones = datos.content || [];
+
         window.marcarConexion(true);
         render(mediciones);
       } catch (error) {
@@ -133,8 +191,55 @@ import Layout from "../layouts/Layout.astro";
       }
     }
 
+    function irAPagina(nueva) {
+      if (nueva < 0 || nueva >= totalPaginas) return;
+      pagina = nueva;
+      cargar();
+    }
+
+    btnAnterior.addEventListener("click", () => irAPagina(pagina - 1));
+    btnSiguiente.addEventListener("click", () => irAPagina(pagina + 1));
+
+    conectarWebSocket({
+      alMensaje: (mensaje) => {
+        if (!mensaje || mensaje.tipo !== "MEDICION" || !mensaje.datos) return;
+        if (!esAlerta(mensaje.datos)) return;
+
+        const m = mensaje.datos;
+        const estado = String(m.estado || "").toUpperCase();
+
+        totalAlertas += 1;
+        if (estado === "PRECAUCION") advertenciasTotal += 1;
+        else criticasTotal += 1;
+        totalPaginas = Math.max(1, Math.ceil(totalAlertas / TAMANO));
+
+        if (pagina === 0) {
+          mediciones.unshift(m);
+          while (mediciones.length > TAMANO) mediciones.pop();
+          render(mediciones);
+        } else {
+          actualizarContadores();
+        }
+      },
+      alCambiarEstado: (online) => {
+        wsEnLinea = online;
+        window.marcarConexion(
+          online,
+          "Se perdió la conexión en tiempo real con la API"
+        );
+      },
+    });
+
     cargar();
-    setInterval(cargar, 5000);
+    cargarResumen();
+
+    // Respaldo: si el WebSocket está caído, sincroniza por polling.
+    setInterval(() => {
+      if (!wsEnLinea) {
+        cargar();
+        cargarResumen();
+      }
+    }, 15000);
   </script>
 
 </Layout>

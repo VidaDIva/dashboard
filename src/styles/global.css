@@ -434,6 +434,10 @@ background: #7c3aed;
 background: #059669;
 }
 
+.legend-dot.red {
+background: #dc2626;
+}
+
 .chart-container {
 padding: 22px;
 }
@@ -1019,4 +1023,222 @@ grid-template-columns: 1fr;
 .user-greeting {
 display: none;
 }
+}
+
+/* =========================
+ESTADO DE VIBRACIÓN
+========================= */
+
+.estado-hero {
+display: flex;
+align-items: center;
+justify-content: space-between;
+
+gap: 24px;
+
+padding: 22px;
+
+margin-bottom: 28px;
+}
+
+.estado-hero-left {
+display: flex;
+align-items: center;
+
+gap: 18px;
+}
+
+.estado-pill {
+padding: 10px 18px;
+
+border-radius: 999px;
+
+font-size: 15px;
+font-weight: 800;
+
+letter-spacing: 1px;
+
+white-space: nowrap;
+}
+
+.pill-espera {
+background: #f3f4f6;
+color: #6b7280;
+}
+
+.pill-normal {
+background: #ecfdf5;
+color: #047857;
+}
+
+.pill-precaucion {
+background: #fef3c7;
+color: #b45309;
+}
+
+.pill-anomala {
+background: #fee2e2;
+color: #b91c1c;
+}
+
+.estado-titulo {
+font-size: 20px;
+font-weight: 700;
+}
+
+.estado-fecha {
+margin-top: 5px;
+
+color: #9ca3af;
+
+font-size: 13px;
+}
+
+.estado-hero-right {
+width: 100%;
+
+max-width: 320px;
+min-width: 240px;
+}
+
+.index-label {
+display: flex;
+justify-content: space-between;
+align-items: center;
+
+margin-bottom: 8px;
+
+color: #6b7280;
+
+font-size: 13px;
+}
+
+.index-label strong {
+font-size: 18px;
+
+color: #172033;
+}
+
+.index-bar {
+height: 10px;
+
+background: #eef1f5;
+
+border-radius: 999px;
+
+overflow: hidden;
+}
+
+.index-fill {
+height: 100%;
+width: 0%;
+
+border-radius: 999px;
+
+transition: width 0.4s ease;
+}
+
+.summary-card.normal {
+border-left: 4px solid #10b981;
+}
+
+.estado-badge {
+display: inline-block;
+
+padding: 4px 10px;
+
+border-radius: 999px;
+
+font-size: 12px;
+font-weight: 700;
+
+white-space: nowrap;
+}
+
+.badge-normal {
+background: #ecfdf5;
+color: #047857;
+}
+
+.badge-precaucion {
+background: #fef3c7;
+color: #b45309;
+}
+
+.badge-anomala {
+background: #fee2e2;
+color: #b91c1c;
+}
+
+@media (max-width: 850px) {
+.estado-hero {
+flex-direction: column;
+align-items: stretch;
+}
+
+.estado-hero-right {
+max-width: none;
+}
+}
+
+/* =========================
+PAGINACIÓN
+========================= */
+
+.pagination {
+display: flex;
+align-items: center;
+justify-content: center;
+
+gap: 14px;
+
+padding: 16px 22px;
+
+border-top: 1px solid #edf0f4;
+}
+
+.pag-btn {
+padding: 9px 16px;
+
+background: white;
+
+border: 1px solid #d1d5db;
+
+border-radius: 9px;
+
+font-family: inherit;
+
+font-size: 13px;
+
+font-weight: 600;
+
+color: #374151;
+
+cursor: pointer;
+
+transition: 0.2s;
+}
+
+.pag-btn:hover:not(:disabled) {
+background: #eff6ff;
+
+border-color: #2563eb;
+
+color: #2563eb;
+}
+
+.pag-btn:disabled {
+opacity: 0.5;
+
+cursor: not-allowed;
+}
+
+.pag-info {
+font-size: 13px;
+
+color: #6b7280;
+
+font-weight: 600;
+
+white-space: nowrap;
 }

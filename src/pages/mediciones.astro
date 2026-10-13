@@ -29,17 +29,28 @@ import Layout from "../layouts/Layout.astro";
         <thead>
           <tr>
             <th>#</th>
+            <th>Estado</th>
             <th>Aceleración X</th>
             <th>Aceleración Y</th>
             <th>Aceleración Z</th>
             <th>Frecuencia</th>
             <th>RMS</th>
             <th>Inclinación</th>
+            <th>Vibración</th>
+            <th>Umbral</th>
+            <th>Índice</th>
+            <th>Fecha</th>
           </tr>
         </thead>
         <tbody id="tabla-mediciones"></tbody>
       </table>
 
+    </div>
+
+    <div class="pagination">
+      <button id="btn-anterior" class="pag-btn" type="button">← Anterior</button>
+      <span id="pagina-info" class="pag-info">Página 1 de 1</span>
+      <button id="btn-siguiente" class="pag-btn" type="button">Siguiente →</button>
     </div>
 
   </section>
@@ -51,12 +62,30 @@ import Layout from "../layouts/Layout.astro";
   </div>
 
   <script>
-    import { obtenerMediciones, formatearNumero } from "../scripts/api.js";
+    import {
+      obtenerMediciones,
+      conectarWebSocket,
+      formatearNumero,
+      formatearFecha,
+      etiquetaEstado,
+      sufijoEstado,
+    } from "../scripts/api.js";
+
+    const TAMANO = 20;
 
     const tabla = document.getElementById("tabla-mediciones");
     const total = document.getElementById("total-mediciones");
     const panel = document.getElementById("panel-historial");
     const vacio = document.getElementById("empty-mediciones");
+    const btnAnterior = document.getElementById("btn-anterior");
+    const btnSiguiente = document.getElementById("btn-siguiente");
+    const paginaInfo = document.getElementById("pagina-info");
+
+    let pagina = 0;
+    let totalMediciones = 0;
+    let totalPaginas = 0;
+    let mediciones = [];
+    let wsEnLinea = false;
 
     function render(mediciones) {
       if (!mediciones || mediciones.length === 0) {
@@ -68,19 +97,33 @@ import Layout from "../layouts/Layout.astro";
       panel.style.display = "block";
       vacio.style.display = "none";
 
-      total.textContent = `${mediciones.length} mediciones registradas`;
+      total.textContent = `${totalMediciones} mediciones registradas`;
+      paginaInfo.textContent =
+        `Página ${pagina + 1} de ${Math.max(totalPaginas, 1)}`;
+
+      btnAnterior.disabled = pagina <= 0;
+      btnSiguiente.disabled = pagina >= totalPaginas - 1;
 
       tabla.innerHTML = mediciones
         .map(
           (m, index) => `
             <tr>
-              <td class="number">${index + 1}</td>
+              <td class="number">${pagina * TAMANO + index + 1}</td>
+              <td>
+                <span class="estado-badge badge-${sufijoEstado(m.estado)}">
+                  ${etiquetaEstado(m.estado)}
+                </span>
+              </td>
               <td>${formatearNumero(m.aceleracionX)}</td>
               <td>${formatearNumero(m.aceleracionY)}</td>
               <td>${formatearNumero(m.aceleracionZ)}</td>
               <td>${formatearNumero(m.frecuencia)} Hz</td>
               <td>${formatearNumero(m.rms)}</td>
               <td>${formatearNumero(m.inclinacion)}°</td>
+              <td>${formatearNumero(m.vibracion)}</td>
+              <td>${formatearNumero(m.umbral)}</td>
+              <td>${formatearNumero(m.indiceAnomalia)}</td>
+              <td>${formatearFecha(m.fechaRegistro)}</td>
             </tr>
           `
         )
@@ -89,7 +132,10 @@ import Layout from "../layouts/Layout.astro";
 
     async function cargar() {
       try {
-        const mediciones = await obtenerMediciones();
+        const datos = await obtenerMediciones({ pagina, tamano: TAMANO });
+        totalMediciones = datos.totalElements || 0;
+        totalPaginas = datos.totalPages || 0;
+        mediciones = datos.content || [];
         window.marcarConexion(true);
         render(mediciones);
       } catch (error) {
@@ -100,8 +146,46 @@ import Layout from "../layouts/Layout.astro";
       }
     }
 
+    function irAPagina(nueva) {
+      if (nueva < 0 || nueva >= totalPaginas) return;
+      pagina = nueva;
+      cargar();
+    }
+
+    btnAnterior.addEventListener("click", () => irAPagina(pagina - 1));
+    btnSiguiente.addEventListener("click", () => irAPagina(pagina + 1));
+
+    conectarWebSocket({
+      alMensaje: (mensaje) => {
+        if (!mensaje || mensaje.tipo !== "MEDICION" || !mensaje.datos) return;
+
+        const m = mensaje.datos;
+        totalMediciones += 1;
+        totalPaginas = Math.max(1, Math.ceil(totalMediciones / TAMANO));
+
+        if (pagina === 0 && !mediciones.some((x) => x.id === m.id)) {
+          mediciones.unshift(m);
+          while (mediciones.length > TAMANO) mediciones.pop();
+          render(mediciones);
+        } else {
+          total.textContent = `${totalMediciones} mediciones registradas`;
+        }
+      },
+      alCambiarEstado: (online) => {
+        wsEnLinea = online;
+        window.marcarConexion(
+          online,
+          "Se perdió la conexión en tiempo real con la API"
+        );
+      },
+    });
+
     cargar();
-    setInterval(cargar, 5000);
+
+    // Respaldo: si el WebSocket está caído, sincroniza por polling.
+    setInterval(() => {
+      if (!wsEnLinea) cargar();
+    }, 15000);
   </script>
 
 </Layout>

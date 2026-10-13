@@ -14,6 +14,40 @@ import Layout from "../layouts/Layout.astro";
     <span></span>
   </div>
 
+  <section class="panel estado-hero" id="panel-estado" style="display:none;">
+    <div class="estado-hero-left">
+      <span class="estado-pill pill-espera" id="estado-pill">—</span>
+      <div>
+        <div class="estado-titulo" id="estado-titulo">En espera de datos</div>
+        <div class="estado-fecha" id="estado-fecha">Cuando llegue la primera medición se verá aquí su estado.</div>
+      </div>
+    </div>
+    <div class="estado-hero-right">
+      <div class="index-label">
+        <span>Índice de anomalía</span>
+        <strong id="indice-valor">—</strong>
+      </div>
+      <div class="index-bar">
+        <div class="index-fill" id="indice-barra"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="alert-summary" id="resumen-estados" style="display:none;">
+    <div class="summary-card normal">
+      <span class="summary-label">Normales</span>
+      <strong id="total-normales">0</strong>
+    </div>
+    <div class="summary-card warning">
+      <span class="summary-label">Precaución</span>
+      <strong id="total-precaucion">0</strong>
+    </div>
+    <div class="summary-card critical">
+      <span class="summary-label">Anómalas</span>
+      <strong id="total-anomalas">0</strong>
+    </div>
+  </section>
+
   <section class="cards">
 
     <div class="card">
@@ -92,6 +126,25 @@ import Layout from "../layouts/Layout.astro";
 
   </section>
 
+  <section class="panel" id="panel-grafico-vib" style="display:none;">
+
+    <div class="panel-header">
+      <div>
+        <h2>Vibración vs umbral</h2>
+        <p>Índice de vibración frente al umbral dinámico · últimas 10 mediciones</p>
+      </div>
+      <div class="chart-legend">
+        <span class="legend-item"><span class="legend-dot blue"></span>Vibración</span>
+        <span class="legend-item"><span class="legend-dot red"></span>Umbral</span>
+      </div>
+    </div>
+
+    <div class="chart-container">
+      <canvas id="grafico-vibracion" class="chart-canvas"></canvas>
+    </div>
+
+  </section>
+
   <section class="panel" id="panel-historial">
 
     <div class="panel-header">
@@ -107,12 +160,17 @@ import Layout from "../layouts/Layout.astro";
         <thead>
           <tr>
             <th>#</th>
+            <th>Estado</th>
             <th>Aceleración X</th>
             <th>Aceleración Y</th>
             <th>Aceleración Z</th>
             <th>Frecuencia</th>
             <th>RMS</th>
             <th>Inclinación</th>
+            <th>Vibración</th>
+            <th>Umbral</th>
+            <th>Índice</th>
+            <th>Fecha</th>
           </tr>
         </thead>
         <tbody id="tabla-mediciones"></tbody>
@@ -129,9 +187,19 @@ import Layout from "../layouts/Layout.astro";
   </div>
 
   <script>
-    import { obtenerMediciones, formatearNumero } from "../scripts/api.js";
+    import {
+      obtenerMediciones,
+      obtenerResumen,
+      conectarWebSocket,
+      formatearNumero,
+      formatearFecha,
+      formatearHora,
+      etiquetaEstado,
+      sufijoEstado,
+    } from "../scripts/api.js";
 
     const LIMITE = 10;
+    const TAMANO_BUFFER = 20;
 
     const CAMPOS = [
       { id: "valor-ax", obtener: (m) => m.aceleracionX },
@@ -154,12 +222,18 @@ import Layout from "../layouts/Layout.astro";
     const vacio = document.getElementById("empty-mediciones");
     const panelGrafico = document.getElementById("panel-grafico");
     const grafico = document.getElementById("grafico-lineas");
+    const panelGraficoVib = document.getElementById("panel-grafico-vib");
+    const graficoVib = document.getElementById("grafico-vibracion");
 
-    function pintarGrafico(mediciones) {
+    // Muestras más recientes primero (página 0 de la API).
+    let mediciones = [];
+    let estadoResumen = { total: 0, normales: 0, precaucion: 0, anomalas: 0 };
+    let wsEnLinea = false;
+
+    function pintarGrafico(datos) {
       if (!grafico || !panelGrafico) return;
 
-      const datos = mediciones.slice(-LIMITE);
-      if (datos.length === 0) {
+      if (!datos || datos.length === 0) {
         panelGrafico.style.display = "none";
         return;
       }
@@ -257,18 +331,158 @@ import Layout from "../layouts/Layout.astro";
       }
     }
 
-    function render(mediciones) {
-      if (!mediciones || mediciones.length === 0) {
+    const SERIES_VIB = [
+      { clave: "vibracion", color: "#2563eb", discontinua: false },
+      { clave: "umbral", color: "#dc2626", discontinua: true },
+    ];
+
+    function pintarGraficoVibracion(datos) {
+      if (!graficoVib || !panelGraficoVib) return;
+
+      const puntos = (datos || []).map((m) => ({
+        fechaRegistro: m.fechaRegistro,
+        vibracion: Number(m.vibracion),
+        umbral: Number(m.umbral),
+      }));
+
+      const validos = puntos.filter(
+        (p) => Number.isFinite(p.vibracion) || Number.isFinite(p.umbral)
+      );
+
+      if (validos.length === 0) {
+        panelGraficoVib.style.display = "none";
+        return;
+      }
+      panelGraficoVib.style.display = "block";
+
+      const ratio = window.devicePixelRatio || 1;
+      const ancho = graficoVib.parentElement.clientWidth || 600;
+      const alto = 300;
+      graficoVib.style.height = `${alto}px`;
+      graficoVib.width = ancho * ratio;
+      graficoVib.height = alto * ratio;
+      const ctx = graficoVib.getContext("2d");
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      ctx.clearRect(0, 0, ancho, alto);
+
+      const margenIzq = 52;
+      const margenDer = 16;
+      const margenSup = 24;
+      const margenInf = 34;
+      const graficableAncho = ancho - margenIzq - margenDer;
+      const graficableAlto = alto - margenSup - margenInf;
+
+      let min = Infinity;
+      let max = -Infinity;
+      for (const p of validos) {
+        for (const v of [p.vibracion, p.umbral]) {
+          if (!Number.isFinite(v)) continue;
+          if (v < min) min = v;
+          if (v > max) max = v;
+        }
+      }
+
+      if (!Number.isFinite(min)) return;
+
+      if (min === max) {
+        min -= 1;
+        max += 1;
+      } else {
+        const rango = max - min;
+        min -= rango * 0.12;
+        max += rango * 0.12;
+      }
+
+      const x = (i) =>
+        validos.length === 1
+          ? margenIzq + graficableAncho / 2
+          : margenIzq + (graficableAncho * i) / (validos.length - 1);
+      const y = (v) =>
+        margenSup +
+        graficableAlto -
+        ((Number(v) - min) / (max - min)) * graficableAlto;
+
+      ctx.font = "11px Inter, Arial, sans-serif";
+      ctx.fillStyle = "#9ca3af";
+      ctx.strokeStyle = "#edf0f4";
+      ctx.lineWidth = 1;
+
+      for (let i = 0; i <= 4; i++) {
+        const valor = min + ((max - min) * i) / 4;
+        const py = margenSup + (graficableAlto * (4 - i)) / 4;
+        ctx.beginPath();
+        ctx.moveTo(margenIzq, py);
+        ctx.lineTo(ancho - margenDer, py);
+        ctx.stroke();
+        ctx.textAlign = "right";
+        ctx.fillText(valor.toFixed(1), margenIzq - 8, py + 4);
+      }
+
+      const indicesEtiqueta =
+        validos.length > 6
+          ? [0, Math.floor((validos.length - 1) / 2), validos.length - 1]
+          : validos.map((_, i) => i);
+
+      ctx.textAlign = "center";
+      for (const i of indicesEtiqueta) {
+        const etiqueta = validos[i].fechaRegistro
+          ? new Date(validos[i].fechaRegistro).toLocaleTimeString("es-CO", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : `#${i + 1}`;
+        ctx.fillText(etiqueta, x(i), alto - 10);
+      }
+
+      for (const s of SERIES_VIB) {
+        ctx.strokeStyle = s.color;
+        ctx.lineWidth = 2;
+        ctx.setLineDash(s.discontinua ? [7, 5] : []);
+        ctx.beginPath();
+        let hayAnterior = false;
+        validos.forEach((p, i) => {
+          const v = p[s.clave];
+          if (!Number.isFinite(v)) {
+            hayAnterior = false;
+            return;
+          }
+          const px = x(i);
+          const py = y(v);
+          if (!hayAnterior) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+          hayAnterior = true;
+        });
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        if (!s.discontinua) {
+          validos.forEach((p, i) => {
+            const v = p[s.clave];
+            if (!Number.isFinite(v)) return;
+            ctx.beginPath();
+            ctx.arc(x(i), y(v), 3, 0, Math.PI * 2);
+            ctx.fillStyle = s.color;
+            ctx.fill();
+          });
+        }
+      }
+    }
+
+    function render() {
+      const ultima = mediciones[0];
+
+      if (!ultima) {
         panel.style.display = "none";
         panelGrafico.style.display = "none";
+        panelGraficoVib.style.display = "none";
         vacio.style.display = "block";
+        const resumenVacio = document.getElementById("resumen-estados");
+        if (resumenVacio) resumenVacio.style.display = "none";
         return;
       }
 
       panel.style.display = "block";
       vacio.style.display = "none";
-
-      const ultima = mediciones[mediciones.length - 1];
 
       for (const campo of CAMPOS) {
         const elemento = document.getElementById(campo.id);
@@ -277,35 +491,135 @@ import Layout from "../layouts/Layout.astro";
         }
       }
 
-      total.textContent = `${mediciones.length} mediciones registradas`;
+      actualizarEstado(ultima);
+      actualizarResumen();
 
-      const ultimas = mediciones.slice(-LIMITE);
-      const inicio = mediciones.length - ultimas.length + 1;
+      total.textContent =
+        estadoResumen.total > 0
+          ? `${estadoResumen.total} mediciones registradas`
+          : `${mediciones.length} mediciones registradas`;
+
+      const ultimas = mediciones.slice(0, LIMITE);
 
       tabla.innerHTML = ultimas
         .map(
           (m, index) => `
             <tr>
-              <td class="number">${inicio + index}</td>
+              <td class="number">${index + 1}</td>
+              <td>
+                <span class="estado-badge badge-${sufijoEstado(m.estado)}">
+                  ${etiquetaEstado(m.estado)}
+                </span>
+              </td>
               <td>${formatearNumero(m.aceleracionX)}</td>
               <td>${formatearNumero(m.aceleracionY)}</td>
               <td>${formatearNumero(m.aceleracionZ)}</td>
               <td>${formatearNumero(m.frecuencia)} Hz</td>
               <td>${formatearNumero(m.rms)}</td>
               <td>${formatearNumero(m.inclinacion)}°</td>
+              <td>${formatearNumero(m.vibracion)}</td>
+              <td>${formatearNumero(m.umbral)}</td>
+              <td>${formatearNumero(m.indiceAnomalia)}</td>
+              <td>${formatearFecha(m.fechaRegistro)}</td>
             </tr>
           `
         )
         .join("");
 
-      pintarGrafico(mediciones);
+      pintarGrafico(ultimas);
+      pintarGraficoVibracion(ultimas);
     }
 
-    async function cargar() {
+    function actualizarEstado(medicion) {
+      const panel = document.getElementById("panel-estado");
+      const pill = document.getElementById("estado-pill");
+      const titulo = document.getElementById("estado-titulo");
+      const fecha = document.getElementById("estado-fecha");
+      const valor = document.getElementById("indice-valor");
+      const barra = document.getElementById("indice-barra");
+
+      if (panel) panel.style.display = "flex";
+
+      const sufijo = sufijoEstado(medicion.estado);
+      if (pill) {
+        pill.textContent = etiquetaEstado(medicion.estado);
+        pill.className = "estado-pill pill-" + sufijo;
+      }
+
+      if (titulo) {
+        titulo.textContent =
+          sufijo === "normal"
+            ? "Comportamiento normal"
+            : sufijo === "precaucion"
+              ? "Nivel de precaución"
+              : "Comportamiento anómalo";
+      }
+
+      if (fecha) {
+        fecha.textContent =
+          `Última medición recibida a las ${formatearHora(medicion.fechaRegistro)}`;
+      }
+
+      const indice = Number(medicion.indiceAnomalia);
+      const normalizado = Number.isFinite(indice) ? indice : 0;
+      if (valor) valor.textContent = normalizado.toFixed(2);
+      if (barra) {
+        barra.style.width = `${Math.round(normalizado * 100)}%`;
+        barra.style.background =
+          sufijo === "precaucion"
+            ? "#f59e0b"
+            : sufijo === "anomala"
+              ? "#dc2626"
+              : "#22c55e";
+      }
+    }
+
+    function actualizarResumen() {
+      const resumenEl = document.getElementById("resumen-estados");
+      if (resumenEl) resumenEl.style.display = "flex";
+
+      const set = (id, valor) => {
+        const elemento = document.getElementById(id);
+        if (elemento) elemento.textContent = valor;
+      };
+
+      set("total-normales", estadoResumen.normales);
+      set("total-precaucion", estadoResumen.precaucion);
+      set("total-anomalas", estadoResumen.anomalas);
+    }
+
+    function clasificarEstado(estado) {
+      const e = String(estado || "").toUpperCase();
+      if (e === "PRECAUCION") return "precaucion";
+      if (e === "ANOMALA" || e === "ANOMALIA") return "anomala";
+      return "normal";
+    }
+
+    function procesarMedicion(datos) {
+      if (!datos) return;
+
+      const yaExiste = mediciones.some((m) => m.id === datos.id);
+      if (!yaExiste) {
+        mediciones.unshift(datos);
+        if (mediciones.length > TAMANO_BUFFER) mediciones.pop();
+
+        estadoResumen.total += 1;
+        const clase = clasificarEstado(datos.estado);
+        if (clase === "precaucion") estadoResumen.precaucion += 1;
+        else if (clase === "anomala") estadoResumen.anomalas += 1;
+        else estadoResumen.normales += 1;
+      }
+
+      render();
+    }
+
+    async function cargarInicial() {
       try {
-        const mediciones = await obtenerMediciones();
+        const pagina = await obtenerMediciones({ pagina: 0, tamano: TAMANO_BUFFER });
+        mediciones = pagina.content || [];
+        estadoResumen = await obtenerResumen();
         window.marcarConexion(true);
-        render(mediciones);
+        render();
       } catch (error) {
         window.marcarConexion(
           false,
@@ -314,8 +628,27 @@ import Layout from "../layouts/Layout.astro";
       }
     }
 
-    cargar();
-    setInterval(cargar, 5000);
+    conectarWebSocket({
+      alMensaje: (mensaje) => {
+        if (mensaje && mensaje.tipo === "MEDICION") {
+          procesarMedicion(mensaje.datos);
+        }
+      },
+      alCambiarEstado: (online) => {
+        wsEnLinea = online;
+        window.marcarConexion(
+          online,
+          "Se perdió la conexión en tiempo real con la API"
+        );
+      },
+    });
+
+    cargarInicial();
+
+    // Respaldo: si el WebSocket está caído, sincroniza por polling.
+    setInterval(() => {
+      if (!wsEnLinea) cargarInicial();
+    }, 15000);
   </script>
 
 </Layout>
