@@ -1,0 +1,221 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout
+  title="Picur | Asistente"
+  active="recomendaciones"
+  eyebrow="ASISTENTE IA"
+  heading="Recomendaciones del asistente"
+  subtitle="Consejos que genera Picu, el asistente, cuando detecta anomalías en las mediciones."
+>
+
+  <div id="error-banner" class="error-banner" style="display:none;">
+    <span></span>
+  </div>
+
+  <section class="alert-summary" id="resumen-asistente" style="display:none;">
+    <div class="summary-card normal">
+      <span class="summary-label">Recomendaciones</span>
+      <strong id="asistente-total">0</strong>
+    </div>
+    <div class="summary-card warning">
+      <span class="summary-label">Precaución</span>
+      <strong id="asistente-precaucion">0</strong>
+    </div>
+    <div class="summary-card critical">
+      <span class="summary-label">Anómalas</span>
+      <strong id="asistente-anomalas">0</strong>
+    </div>
+  </section>
+
+  <section class="panel asistente-mensaje" id="asistente-mensaje-panel" style="display:none;">
+    <div class="asistente-mensaje-head">
+      <span class="pixel-bulb" aria-hidden="true">✦</span>
+      <p class="eyebrow">MENSAJE DEL ASISTENTE</p>
+    </div>
+    <p class="asistente-nivel" id="asistente-nivel"></p>
+    <p class="asistente-ultimo" id="asistente-mensaje"></p>
+    <p class="asistente-recomendacion" id="asistente-recomendacion"></p>
+    <p class="asistente-meta" id="asistente-meta"></p>
+  </section>
+
+  <section
+    class="asistente-lista"
+    id="recomendaciones-contenedor"
+    style="display:none;"
+  ></section>
+
+  <div id="recomendaciones-vacio" class="empty" style="display:flex;">
+    <div class="empty-icon">✦</div>
+    <h2>Sin recomendaciones todavía</h2>
+    <p>Cuando el asistente detecte una anomalía, aquí aparecerá su consejo.</p>
+  </div>
+
+  <div class="pagination" id="paginacion-recomendaciones" style="display:none;">
+    <button id="btn-anterior" class="pag-btn" type="button">← Anterior</button>
+    <span id="pagina-info" class="pag-info">Página 1 de 1</span>
+    <button id="btn-siguiente" class="pag-btn" type="button">Siguiente →</button>
+  </div>
+
+  <script>
+    import {
+      obtenerEstadoAsistente,
+      obtenerRecomendaciones,
+      formatearFecha,
+      formatearNumero,
+    } from "../scripts/api.js";
+    import type { Recomendacion, AsistenteEstado } from "../scripts/tipos";
+
+    const TAMANO = 10;
+
+    const contenedor = document.getElementById("recomendaciones-contenedor")!;
+    const vacio = document.getElementById("recomendaciones-vacio")!;
+    const paginacion = document.getElementById("paginacion-recomendaciones")!;
+    const btnAnterior = document.getElementById("btn-anterior") as HTMLButtonElement;
+    const btnSiguiente = document.getElementById("btn-siguiente") as HTMLButtonElement;
+    const paginaInfo = document.getElementById("pagina-info")!;
+    const total = document.getElementById("asistente-total")!;
+    const precaucion = document.getElementById("asistente-precaucion")!;
+    const anomalas = document.getElementById("asistente-anomalas")!;
+    const resumenEl = document.getElementById("resumen-asistente")!;
+    const mensajePanel = document.getElementById("asistente-mensaje-panel")!;
+    const mensajeTexto = document.getElementById("asistente-mensaje")!;
+    const mensajeMeta = document.getElementById("asistente-meta")!;
+    const nivelTexto = document.getElementById("asistente-nivel")!;
+    const recomendacionTexto = document.getElementById("asistente-recomendacion")!;
+
+    let pagina = 0;
+    let totalPaginas = 0;
+    let recomendaciones: Recomendacion[] = [];
+
+    function sufijoSeveridad(severidad: string) {
+      const s = String(severidad || "").toUpperCase();
+      if (s === "ANOMALA" || s === "ANOMALIA") return "anomala";
+      if (s === "PRECAUCION") return "precaucion";
+      return "normal";
+    }
+
+    function etiquetaSeveridad(severidad: string) {
+      const s = String(severidad || "").toUpperCase();
+      if (s === "ANOMALA" || s === "ANOMALIA") return "ANÓMALA";
+      if (s === "PRECAUCION") return "PRECAUCIÓN";
+      return "INFORMATIVA";
+    }
+
+    function etiquetaNivel(nivel: string) {
+      const s = String(nivel || "").toUpperCase();
+      if (s === "ANOMALA" || s === "ANOMALIA") return "Anómala";
+      if (s === "PRECAUCION") return "Precaución";
+      if (s === "NORMAL") return "Normal";
+      return "Sin datos";
+    }
+
+    function tarjeta(recomendacion: Recomendacion) {
+      const sufijo = sufijoSeveridad(recomendacion.severidad);
+      const icono = sufijo === "anomala" ? "!" : sufijo === "precaucion" ? "⚠" : "●";
+      const metrica = recomendacion.metrica || "Sensor";
+      const indice = formatearNumero(recomendacion.indice);
+
+      return `
+        <div class="asistente-card ${sufijo === "normal" ? "" : "asistente-card-" + sufijo}">
+          <div class="alert-icon ${sufijo === "anomala" ? "asistente-icona" : sufijo === "precaucion" ? "asistente-iconw" : ""}">
+            ${icono}
+          </div>
+          <div class="alert-content">
+            <div class="alert-top">
+              <span class="alert-type">${etiquetaSeveridad(recomendacion.severidad)}</span>
+              <span class="estado-badge badge-${sufijo}">Índice ${indice}</span>
+            </div>
+            <h2>${recomendacion.titulo}</h2>
+            <p>${recomendacion.recomendacion}</p>
+            <p class="asistente-meta">
+              Sensor: ${recomendacion.dispositivo} · Métrica: ${metrica} ·
+              ${formatearFecha(recomendacion.fechaRegistro)}
+            </p>
+          </div>
+        </div>
+      `;
+    }
+
+    function pintarEstado(estado: AsistenteEstado | null) {
+      if (!estado) return;
+
+      resumenEl.style.display = "grid";
+      total.textContent = String(estado.resumen?.total || 0);
+      precaucion.textContent = String(estado.resumen?.precaucion || 0);
+      anomalas.textContent = String(estado.resumen?.anomalas || 0);
+
+      if (estado.mensaje) {
+        mensajePanel.style.display = "flex";
+        mensajeTexto.textContent = estado.mensaje;
+
+        const sufijo = sufijoSeveridad(estado.nivel);
+        nivelTexto.textContent = etiquetaNivel(estado.nivel);
+        nivelTexto.className = "asistente-nivel badge-" + sufijo;
+        recomendacionTexto.textContent = estado.recomendacion || "";
+
+        const ultima = estado.ultimaRecomendacion;
+        mensajeMeta.textContent = ultima
+          ? `Última recomendación · ${formatearFecha(ultima.fechaRegistro)}`
+          : "";
+      }
+    }
+
+    function render() {
+      if (!recomendaciones || recomendaciones.length === 0) {
+        contenedor.style.display = "none";
+        paginacion.style.display = "none";
+        vacio.style.display = "flex";
+        return;
+      }
+
+      contenedor.style.display = "flex";
+      paginacion.style.display = "flex";
+      vacio.style.display = "none";
+
+      contenedor.innerHTML = recomendaciones.map(tarjeta).join("");
+
+      paginaInfo.textContent = `Página ${pagina + 1} de ${Math.max(totalPaginas, 1)}`;
+      btnAnterior.disabled = pagina <= 0;
+      btnSiguiente.disabled = pagina >= totalPaginas - 1;
+    }
+
+    async function cargar() {
+      try {
+        const [estado, datos] = await Promise.all([
+          obtenerEstadoAsistente(),
+          obtenerRecomendaciones({ pagina, tamano: TAMANO }),
+        ]);
+
+        totalPaginas = datos.totalPages || 0;
+        recomendaciones = datos.content || [];
+
+        pintarEstado(estado);
+        window.marcarConexion(true);
+        render();
+      } catch (error) {
+        window.marcarConexion(
+          false,
+          error instanceof Error && error.message
+            ? error.message
+            : "Se perdió la conexión con la API"
+        );
+      }
+    }
+
+    function irAPagina(nueva: number) {
+      if (nueva < 0 || nueva >= totalPaginas) return;
+      pagina = nueva;
+      cargar();
+    }
+
+    btnAnterior.addEventListener("click", () => irAPagina(pagina - 1));
+    btnSiguiente.addEventListener("click", () => irAPagina(pagina + 1));
+
+    cargar();
+
+    setInterval(cargar, 20000);
+  </script>
+
+</Layout>

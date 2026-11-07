@@ -54,28 +54,29 @@ import Layout from "../layouts/Layout.astro";
       conectarWebSocket,
       formatearNumero,
     } from "../scripts/api.js";
+    import type { Medicion, MensajeWebSocket } from "../scripts/tipos";
 
     const TAMANO = 20;
 
-    const contenedor = document.getElementById("alertas-contenedor");
-    const vacio = document.getElementById("alertas-vacio");
-    const paginacion = document.getElementById("paginacion-alertas");
-    const btnAnterior = document.getElementById("btn-anterior");
-    const btnSiguiente = document.getElementById("btn-siguiente");
-    const paginaInfo = document.getElementById("pagina-info");
-    const total = document.getElementById("total-alertas");
-    const criticas = document.getElementById("total-criticas");
-    const advertencias = document.getElementById("total-advertencias");
+    const contenedor = document.getElementById("alertas-contenedor")!;
+    const vacio = document.getElementById("alertas-vacio")!;
+    const paginacion = document.getElementById("paginacion-alertas")!;
+    const btnAnterior = document.getElementById("btn-anterior") as HTMLButtonElement;
+    const btnSiguiente = document.getElementById("btn-siguiente") as HTMLButtonElement;
+    const paginaInfo = document.getElementById("pagina-info")!;
+    const total = document.getElementById("total-alertas")!;
+    const criticas = document.getElementById("total-criticas")!;
+    const advertencias = document.getElementById("total-advertencias")!;
 
     let pagina = 0;
     let totalAlertas = 0;
     let criticasTotal = 0;
     let advertenciasTotal = 0;
     let totalPaginas = 0;
-    let mediciones = [];
+    let mediciones: Medicion[] = [];
     let wsEnLinea = false;
 
-    function esAlerta(medicion) {
+    function esAlerta(medicion: Medicion) {
       const estado = String(medicion.estado || "").toUpperCase();
       return (
         estado === "ANOMALA" ||
@@ -84,7 +85,7 @@ import Layout from "../layouts/Layout.astro";
       );
     }
 
-    function tarjetaAlerta(medicion) {
+    function tarjetaAlerta(medicion: Medicion) {
       const estado = String(medicion.estado || "").toUpperCase();
       const tipo = estado === "PRECAUCION" ? "ADVERTENCIA" : "CRITICA";
       const indice = formatearNumero(medicion.indiceAnomalia);
@@ -122,12 +123,12 @@ import Layout from "../layouts/Layout.astro";
     }
 
     function actualizarContadores() {
-      total.textContent = totalAlertas;
-      criticas.textContent = criticasTotal;
-      advertencias.textContent = advertenciasTotal;
+      total.textContent = String(totalAlertas);
+      criticas.textContent = String(criticasTotal);
+      advertencias.textContent = String(advertenciasTotal);
     }
 
-    function render(mediciones) {
+    function render(mediciones: Medicion[]) {
       actualizarContadores();
 
       if (!mediciones || mediciones.length === 0) {
@@ -159,7 +160,9 @@ import Layout from "../layouts/Layout.astro";
       } catch (error) {
         window.marcarConexion(
           false,
-          error.message || "Se perdió la conexión con la API"
+          error instanceof Error && error.message
+            ? error.message
+            : "Se perdió la conexión con la API"
         );
       }
     }
@@ -186,12 +189,14 @@ import Layout from "../layouts/Layout.astro";
       } catch (error) {
         window.marcarConexion(
           false,
-          error.message || "Se perdió la conexión con la API"
+          error instanceof Error && error.message
+            ? error.message
+            : "Se perdió la conexión con la API"
         );
       }
     }
 
-    function irAPagina(nueva) {
+    function irAPagina(nueva: number) {
       if (nueva < 0 || nueva >= totalPaginas) return;
       pagina = nueva;
       cargar();
@@ -201,7 +206,7 @@ import Layout from "../layouts/Layout.astro";
     btnSiguiente.addEventListener("click", () => irAPagina(pagina + 1));
 
     conectarWebSocket({
-      alMensaje: (mensaje) => {
+      alMensaje: (mensaje: MensajeWebSocket) => {
         if (!mensaje || mensaje.tipo !== "MEDICION" || !mensaje.datos) return;
         if (!esAlerta(mensaje.datos)) return;
 
@@ -221,7 +226,7 @@ import Layout from "../layouts/Layout.astro";
           actualizarContadores();
         }
       },
-      alCambiarEstado: (online) => {
+      alCambiarEstado: (online: boolean) => {
         wsEnLinea = online;
         window.marcarConexion(
           online,

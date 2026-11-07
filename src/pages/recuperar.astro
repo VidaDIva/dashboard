@@ -1,0 +1,104 @@
+---
+import "../styles/global.css";
+---
+
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Picur | Recuperar contraseña</title>
+  </head>
+
+  <body class="auth-page">
+
+    <div class="auth-card">
+
+      <div class="auth-logo">
+        <div class="logo-icon">P</div>
+        <span>Picur</span>
+      </div>
+
+      <h1>Recuperar contraseña</h1>
+
+      <p class="auth-subtitle">
+        Te enviaremos un código por correo para restablecerla.
+      </p>
+
+      <div id="auth-error" class="auth-error" style="display:none;"></div>
+      <div id="auth-success" class="auth-success" style="display:none;"></div>
+
+      <form id="recuperar-form" class="auth-form">
+
+        <div class="form-group">
+          <label class="form-label" for="contacto">Correo electrónico</label>
+          <input
+            class="form-input"
+            type="email"
+            id="contacto"
+            name="contacto"
+            placeholder="tucorreo@ejemplo.com"
+            required
+          />
+        </div>
+
+        <button class="btn btn-primary btn-block" type="submit">
+          Enviar código
+        </button>
+
+      </form>
+
+      <p class="auth-link">
+        <a href="/login">← Volver a iniciar sesión</a>
+      </p>
+
+      <div id="paso-codigo" class="paso-codigo" hidden>
+        <p>
+          Si tus datos son correctos, llegó un código a tu correo.
+        </p>
+        <a class="btn btn-primary btn-block" id="continuar-link" href="/restablecer">Continuar</a>
+      </div>
+
+    </div>
+
+    <script>
+      import { solicitarRecuperacion } from "../scripts/api.js";
+
+      const formulario = document.getElementById("recuperar-form")!;
+      const errorBox = document.getElementById("auth-error")!;
+      const exitoBox = document.getElementById("auth-success")!;
+      const boton = formulario.querySelector("button")!;
+      const pasoCodigo = document.getElementById("paso-codigo")!;
+      const continuarLink = document.getElementById("continuar-link") as HTMLAnchorElement;
+
+      formulario.addEventListener("submit", async (evento) => {
+        evento.preventDefault();
+
+        errorBox.style.display = "none";
+        exitoBox.style.display = "none";
+
+        const contacto = (document.getElementById("contacto") as HTMLInputElement).value.trim();
+
+        boton.disabled = true;
+        boton.textContent = "Enviando...";
+
+        try {
+          const respuesta = await solicitarRecuperacion(contacto);
+
+          exitoBox.textContent = respuesta.mensaje || "Código enviado correctamente.";
+          exitoBox.style.display = "block";
+
+          continuarLink.href = "/restablecer?contacto=" + encodeURIComponent(contacto);
+          pasoCodigo.hidden = false;
+        } catch (error) {
+          errorBox.textContent =
+            error instanceof Error ? error.message : "No se pudo enviar el código";
+          errorBox.style.display = "block";
+        } finally {
+          boton.disabled = false;
+          boton.textContent = "Enviar código";
+        }
+      });
+    </script>
+
+  </body>
+</html>

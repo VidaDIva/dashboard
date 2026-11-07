@@ -1234,11 +1234,487 @@ cursor: not-allowed;
 }
 
 .pag-info {
-font-size: 13px;
+  font-size: 13px;
 
-color: #6b7280;
+  color: #6b7280;
 
-font-weight: 600;
+  font-weight: 600;
 
-white-space: nowrap;
+  white-space: nowrap;
+}
+
+/* =========================
+RECUPERAR CONTRASEÑA
+========================= */
+
+.form-codigo {
+  font-size: 22px;
+
+  letter-spacing: 8px;
+
+  text-align: center;
+
+  font-weight: 700;
+}
+
+.paso-codigo {
+  margin-top: 20px;
+
+  padding: 16px;
+
+  background: #f0fdf4;
+
+  border: 1px solid #a7f3d0;
+
+  border-radius: 10px;
+}
+
+.paso-codigo p {
+  margin: 0 0 12px;
+
+  color: #047857;
+
+  font-size: 13px;
+}
+
+/* =========================
+ASISTENTE · RECOMENDACIONES
+========================= */
+
+.asistente-mensaje {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 8px;
+
+  padding: 22px;
+
+  margin-bottom: 28px;
+}
+
+.asistente-mensaje-head {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+}
+
+.asistente-mensaje-head .eyebrow,
+.asistente-mensaje .eyebrow {
+  margin: 0;
+}
+
+.pixel-bulb {
+  color: #2563eb;
+
+  font-size: 18px;
+}
+
+.asistente-ultimo {
+  margin: 0;
+
+  font-size: 16px;
+
+  font-weight: 600;
+
+  line-height: 1.6;
+
+  color: #172033;
+}
+
+.asistente-nivel {
+  align-self: flex-start;
+
+  margin: 0;
+
+  padding: 4px 10px;
+
+  border-radius: 999px;
+
+  font-size: 12px;
+
+  font-weight: 700;
+
+  letter-spacing: 0.06em;
+
+  text-transform: uppercase;
+
+  color: #1e3a8a;
+
+  background: #dbeafe;
+}
+
+.asistente-nivel.badge-precaucion {
+  color: #92400e;
+
+  background: #fef3c7;
+}
+
+.asistente-nivel.badge-anomala {
+  color: #991b1b;
+
+  background: #fee2e2;
+}
+
+.asistente-recomendacion {
+  margin: 0;
+
+  color: #374151;
+
+  font-size: 14px;
+
+  line-height: 1.6;
+}
+
+.asistente-meta {
+  margin: 0;
+
+  color: #9ca3af;
+
+  font-size: 13px;
+}
+
+.asistente-lista {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 14px;
+}
+
+.asistente-card {
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 16px;
+
+  padding: 20px;
+
+  background: white;
+
+  border: 1px solid #e8ebf0;
+
+  border-left: 4px solid #10b981;
+
+  border-radius: 14px;
+
+  box-shadow: 0 3px 15px rgba(0, 0, 0, 0.03);
+}
+
+.asistente-card-anomala {
+  border-left-color: #dc2626;
+}
+
+.asistente-card-precaucion {
+  border-left-color: #f59e0b;
+}
+
+.asistente-icona {
+  background: #fef2f2;
+
+  color: #dc2626;
+}
+
+.asistente-iconw {
+  background: #fffbeb;
+
+  color: #d97706;
+}
+
+.asistente-alerta {
+  animation: destello 1s ease-in-out infinite;
+}
+
+@keyframes destello {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+
+  50% {
+    filter: brightness(1.25);
+  }
+}
+
+/* =========================
+MASCOTA LLAVERO (PIXEL ART)
+========================= */
+
+.asistente-llavero {
+  position: fixed;
+
+  right: 22px;
+
+  bottom: 22px;
+
+  z-index: 1000;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+}
+
+.asistente-llavero[hidden],
+.asistente-burbuja[hidden] {
+  display: none;
+}
+
+.asistente-cuerpo {
+  border: none;
+
+  background: none;
+
+  padding: 0;
+
+  cursor: pointer;
+
+  position: relative;
+
+  filter: drop-shadow(0 6px 10px rgba(17, 24, 39, 0.28));
+}
+
+.asistente-svg {
+  display: block;
+}
+
+.asistente-svg svg {
+  display: block;
+
+  width: 92px;
+
+  height: 105px;
+
+  image-rendering: pixelated;
+
+  animation: rebote 3s ease-in-out infinite;
+}
+
+@keyframes rebote {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.asistente-llavero[data-humor="alerta"] .asistente-svg svg {
+  animation: rebote 0.6s ease-in-out infinite;
+}
+
+.asistente-sombra {
+  display: block;
+
+  width: 70px;
+
+  height: 9px;
+
+  margin-top: 2px;
+
+  border-radius: 50%;
+
+  background: rgba(17, 24, 39, 0.18);
+}
+
+.asistente-llavero[data-humor="alerta"] .asistente-sombra {
+  width: 56px;
+}
+
+.asistente-burbuja {
+  position: absolute;
+
+  right: -6px;
+
+  bottom: calc(100% + 14px);
+
+  width: 280px;
+
+  padding: 14px 16px;
+
+  background: #ffffff;
+
+  border: 3px solid #111827;
+
+  border-radius: 12px;
+
+  box-shadow: 6px 6px 0 rgba(17, 24, 39, 0.85);
+
+  opacity: 0;
+
+  transform: translateY(8px) scale(0.96);
+
+  transform-origin: bottom right;
+
+  transition: opacity 0.18s ease, transform 0.18s ease;
+
+  pointer-events: none;
+}
+
+.asistente-burbuja::after {
+  content: "";
+
+  position: absolute;
+
+  right: 18px;
+
+  bottom: -8px;
+
+  width: 14px;
+
+  height: 14px;
+
+  background: #ffffff;
+
+  border-right: 3px solid #111827;
+
+  border-bottom: 3px solid #111827;
+
+  transform: rotate(45deg);
+}
+
+.asistente-burbuja.visible {
+  opacity: 1;
+
+  transform: translateY(0) scale(1);
+
+  pointer-events: auto;
+}
+
+.burbuja-encabezado {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 10px;
+
+  margin-bottom: 8px;
+}
+
+.burbuja-titulo {
+  font-size: 10px;
+
+  font-weight: 800;
+
+  letter-spacing: 1px;
+
+  color: #2563eb;
+
+  text-transform: uppercase;
+}
+
+.burbuja-cerrar {
+  border: none;
+
+  background: #f3f4f6;
+
+  width: 22px;
+
+  height: 22px;
+
+  border-radius: 6px;
+
+  font-size: 14px;
+
+  line-height: 1;
+
+  color: #6b7280;
+
+  cursor: pointer;
+}
+
+.burbuja-cerrar:hover {
+  background: #fee2e2;
+
+  color: #dc2626;
+}
+
+.burbuja-mensaje {
+  margin: 0;
+
+  font-size: 13px;
+
+  line-height: 1.55;
+
+  color: #172033;
+}
+
+.burbuja-enlace {
+  display: inline-block;
+
+  margin-top: 10px;
+
+  font-size: 12px;
+
+  font-weight: 700;
+
+  color: #2563eb;
+
+  text-decoration: none;
+}
+
+.burbuja-enlace:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 700px) {
+  .asistente-burbuja {
+    width: 230px;
+
+    right: -4px;
+  }
+
+  .asistente-svg svg {
+    width: 72px;
+
+    height: 82px;
+  }
+
+  .asistente-llavero {
+    right: 14px;
+
+    bottom: 14px;
+  }
+
+  .asistente-sombra {
+    width: 56px;
+  }
+}
+
+/* =========================
+RETRO PIXEL ART (ACENTOS)
+========================= */
+
+.pixel-font {
+  font-family: "Press Start 2P", "Courier New", monospace;
+
+  letter-spacing: 0.5px;
+}
+
+.pixel-pill {
+  display: inline-block;
+
+  padding: 6px 10px;
+
+  background: #111827;
+
+  color: #f4f7fb;
+
+  border-radius: 0;
+
+  box-shadow: 3px 3px 0 #2563eb;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  letter-spacing: 1px;
 }

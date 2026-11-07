@@ -1,0 +1,200 @@
+---
+interface Props {
+  compacto?: boolean;
+}
+const { compacto = false } = Astro.props;
+---
+
+<div
+  id="asistente-llavero"
+  class:list={["asistente-llavero", compacto && "compacto"]}
+  data-humor="tranquila"
+  hidden
+>
+  <div id="llavero-burbuja" class="asistente-burbuja" hidden>
+    <div class="burbuja-encabezado">
+      <span class="burbuja-titulo">Picur · Asistente</span>
+      <button
+        id="llavero-cerrar"
+        class="burbuja-cerrar"
+        type="button"
+        aria-label="Cerrar"
+      >×</button>
+    </div>
+    <p id="llavero-mensaje" class="burbuja-mensaje">…</p>
+    <a class="burbuja-enlace" href="/recomendaciones">Ver recomendaciones →</a>
+  </div>
+
+  <button
+    id="llavero-cuerpo"
+    class="asistente-cuerpo"
+    type="button"
+    aria-label="Asistente Picur"
+  >
+    <span id="llavero-svg" class="asistente-svg"></span>
+    <span class="asistente-sombra"></span>
+  </button>
+</div>
+
+<script>
+  import {
+    obtenerEstadoAsistente,
+    conectarWebSocket,
+  } from "../scripts/api.js";
+
+  const BASE: string[] = [
+    ".....RRRR.....",
+    ".....R..R.....",
+    ".....RRRR.....",
+    ".OOOOOOOOOOOO.",
+    ".OSSSSSSSSSSO.",
+    ".OSSSSSSSSSSO.",
+    ".OSEESSSSEESO.",
+    ".OSEESSSSEESO.",
+    ".OSSSSSSSSSSO.",
+    ".OSSMMMMMMSSO.",
+    ".OSSMMMMMMSSO.",
+    ".OSSSSSSSSSSO.",
+    ".OSSSSSSSSSSO.",
+    ".OSSSSSSSSSSO.",
+    ".OSSSSSSSSSSO.",
+    ".OOOOOOOOOOOO.",
+  ];
+
+  const CARAS: Record<
+    string,
+    { cara: string; ojo: string; boca: string; ojos: string[]; bocaFilas: string[] }
+  > = {
+    tranquila: {
+      cara: "#dbeafe", ojo: "#2563eb", boca: "#1e3a8a",
+      ojos: [".OSEESSSSEESO.", ".OSEESSSSEESO."],
+      bocaFilas: [".OSSSSMMSSSSO.", ".OSSMMMMMMSSO."],
+    },
+    atenta: {
+      cara: "#fef3c7", ojo: "#b45309", boca: "#92400e",
+      ojos: [".OSEESSSSEESO.", ".OSEESSSSEESO."],
+      bocaFilas: [".OSSSSSSSSSSO.", ".OSMMMMMMMMSO."],
+    },
+    alerta: {
+      cara: "#fee2e2", ojo: "#dc2626", boca: "#991b1b",
+      ojos: [".OSEEESSEEESO.", ".OSEEESSEEESO."],
+      bocaFilas: [".OSMMMMMMMMSO.", ".OSSMMMMMMSSO."],
+    },
+    espera: {
+      cara: "#f1f5f9", ojo: "#64748b", boca: "#475569",
+      ojos: [".OSSSSSSSSSSO.", ".OSEESSSSEESO."],
+      bocaFilas: [".OSSSSSSSSSSO.", ".OSSSMMMMSSSO."],
+    },
+  };
+
+  function construirSprite(humor: string) {
+    const conf = CARAS[humor] || CARAS.tranquila;
+    const filas = BASE.map((fila, i) => {
+      if (i === 6) return conf.ojos[0];
+      if (i === 7) return conf.ojos[1];
+      if (i === 9) return conf.bocaFilas[0];
+      if (i === 10) return conf.bocaFilas[1];
+      return fila;
+    });
+
+    let rects = "";
+    filas.forEach((fila, y) => {
+      for (let x = 0; x < fila.length; x++) {
+        const ch = fila[x];
+        let color: string | null = null;
+        if (ch === "O") color = "#111827";
+        else if (ch === "R") color = "#9ca3af";
+        else if (ch === "S") color = conf.cara;
+        else if (ch === "E") color = conf.ojo;
+        else if (ch === "M") color = conf.boca;
+        if (!color) continue;
+        rects += `<rect x='${x}' y='${y}' width='1' height='1' fill='${color}'/>`;
+      }
+    });
+
+    return `<svg viewBox='0 0 14 16' width='112' height='128' ` +
+      `shape-rendering='crispEdges' xmlns='http://www.w3.org/2000/svg'>` +
+      rects + `</svg>`;
+  }
+
+  const contenedor = document.getElementById("asistente-llavero");
+  const svgSlot = document.getElementById("llavero-svg");
+  const burbuja = document.getElementById("llavero-burbuja");
+  const mensaje = document.getElementById("llavero-mensaje");
+  const botonCerrar = document.getElementById("llavero-cerrar");
+  const cuerpoBoton = document.getElementById("llavero-cuerpo");
+
+  let ocultarTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  function pintar(humor: string) {
+    const valido = CARAS[humor] ? humor : "tranquila";
+    if (svgSlot) svgSlot.innerHTML = construirSprite(valido);
+    if (contenedor) contenedor.dataset.humor = valido;
+  }
+
+  function mostrarBurbuja(texto: string, duracion = 9000) {
+    if (!burbuja || !mensaje) return;
+    mensaje.textContent = texto;
+    burbuja.hidden = false;
+    requestAnimationFrame(() => burbuja.classList.add("visible"));
+    if (ocultarTimeout) clearTimeout(ocultarTimeout);
+    if (duracion > 0) ocultarTimeout = setTimeout(ocultarBurbuja, duracion);
+  }
+
+  function ocultarBurbuja() {
+    if (!burbuja) return;
+    if (ocultarTimeout) clearTimeout(ocultarTimeout);
+    burbuja.classList.remove("visible");
+    setTimeout(() => {
+      burbuja.hidden = true;
+    }, 200);
+  }
+
+  async function actualizarEstado(forzarBurbuja = false) {
+    try {
+      const estado = await obtenerEstadoAsistente();
+      pintar(estado.humor || "tranquila");
+
+      if (estado.humor === "alerta" || estado.humor === "atenta" || forzarBurbuja) {
+        const prefijo =
+          estado.humor === "alerta"
+            ? "¡Alerta! "
+            : estado.humor === "atenta"
+              ? "Ojo: "
+              : "";
+        mostrarBurbuja(prefijo + (estado.mensaje || "Sigo vigilando las señales."));
+      }
+    } catch {
+      // Sin conexión con la API: se mantiene el estado actual.
+    }
+  }
+
+  if (contenedor) contenedor.hidden = false;
+  pintar("tranquila");
+  actualizarEstado(true);
+
+  cuerpoBoton?.addEventListener("click", () => {
+    if (burbuja?.hidden) actualizarEstado(true);
+    else ocultarBurbuja();
+  });
+
+  botonCerrar?.addEventListener("click", ocultarBurbuja);
+
+  let ultimoAviso = 0;
+  conectarWebSocket({
+    alMensaje: (msg: { tipo?: string; datos?: { estado?: string } }) => {
+      if (!msg || msg.tipo !== "MEDICION" || !msg.datos) return;
+      const estado = String(msg.datos.estado || "").toUpperCase();
+      const esAlerta =
+        estado === "ANOMALA" || estado === "ANOMALIA" || estado === "PRECAUCION";
+      if (!esAlerta) return;
+
+      const ahora = Date.now();
+      if (ahora - ultimoAviso < 3000) return;
+      ultimoAviso = ahora;
+      actualizarEstado(true);
+    },
+  });
+
+  setInterval(() => actualizarEstado(false), 20000);
+</script>

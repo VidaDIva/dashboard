@@ -70,24 +70,25 @@ import Layout from "../layouts/Layout.astro";
       etiquetaEstado,
       sufijoEstado,
     } from "../scripts/api.js";
+    import type { Medicion, MensajeWebSocket } from "../scripts/tipos";
 
     const TAMANO = 20;
 
-    const tabla = document.getElementById("tabla-mediciones");
-    const total = document.getElementById("total-mediciones");
-    const panel = document.getElementById("panel-historial");
-    const vacio = document.getElementById("empty-mediciones");
-    const btnAnterior = document.getElementById("btn-anterior");
-    const btnSiguiente = document.getElementById("btn-siguiente");
-    const paginaInfo = document.getElementById("pagina-info");
+    const tabla = document.getElementById("tabla-mediciones")!;
+    const total = document.getElementById("total-mediciones")!;
+    const panel = document.getElementById("panel-historial")!;
+    const vacio = document.getElementById("empty-mediciones")!;
+    const btnAnterior = document.getElementById("btn-anterior") as HTMLButtonElement;
+    const btnSiguiente = document.getElementById("btn-siguiente") as HTMLButtonElement;
+    const paginaInfo = document.getElementById("pagina-info")!;
 
     let pagina = 0;
     let totalMediciones = 0;
     let totalPaginas = 0;
-    let mediciones = [];
+    let mediciones: Medicion[] = [];
     let wsEnLinea = false;
 
-    function render(mediciones) {
+    function render(mediciones: Medicion[]) {
       if (!mediciones || mediciones.length === 0) {
         panel.style.display = "none";
         vacio.style.display = "block";
@@ -141,12 +142,14 @@ import Layout from "../layouts/Layout.astro";
       } catch (error) {
         window.marcarConexion(
           false,
-          error.message || "Se perdió la conexión con la API"
+          error instanceof Error && error.message
+            ? error.message
+            : "Se perdió la conexión con la API"
         );
       }
     }
 
-    function irAPagina(nueva) {
+    function irAPagina(nueva: number) {
       if (nueva < 0 || nueva >= totalPaginas) return;
       pagina = nueva;
       cargar();
@@ -156,7 +159,7 @@ import Layout from "../layouts/Layout.astro";
     btnSiguiente.addEventListener("click", () => irAPagina(pagina + 1));
 
     conectarWebSocket({
-      alMensaje: (mensaje) => {
+      alMensaje: (mensaje: MensajeWebSocket) => {
         if (!mensaje || mensaje.tipo !== "MEDICION" || !mensaje.datos) return;
 
         const m = mensaje.datos;
@@ -171,7 +174,7 @@ import Layout from "../layouts/Layout.astro";
           total.textContent = `${totalMediciones} mediciones registradas`;
         }
       },
-      alCambiarEstado: (online) => {
+      alCambiarEstado: (online: boolean) => {
         wsEnLinea = online;
         window.marcarConexion(
           online,

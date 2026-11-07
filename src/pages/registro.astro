@@ -96,17 +96,17 @@ import "../styles/global.css";
     <script>
       import { API_URL } from "../scripts/api.js";
 
-      const formulario = document.getElementById("registro-form");
-      const errorBox = document.getElementById("auth-error");
-      const boton = formulario.querySelector("button");
+      const formulario = document.getElementById("registro-form")!;
+      const errorBox = document.getElementById("auth-error")!;
+      const boton = formulario.querySelector("button")!;
 
       formulario.addEventListener("submit", async (evento) => {
         evento.preventDefault();
 
         errorBox.style.display = "none";
 
-        const contrasena = document.getElementById("contrasena").value;
-        const confirmar = document.getElementById("confirmarContrasena").value;
+        const contrasena = (document.getElementById("contrasena") as HTMLInputElement).value;
+        const confirmar = (document.getElementById("confirmarContrasena") as HTMLInputElement).value;
 
         if (contrasena !== confirmar) {
           errorBox.textContent = "Las contraseñas no coinciden";
@@ -115,12 +115,12 @@ import "../styles/global.css";
         }
 
         const datos = {
-          nombre: document.getElementById("nombre").value.trim(),
-          apellido: document.getElementById("apellido").value.trim(),
-          celular: document.getElementById("celular").value.trim(),
-          direccion: document.getElementById("direccion").value.trim(),
-          fechaNacimiento: document.getElementById("fechaNacimiento").value,
-          correo: document.getElementById("correo").value.trim(),
+          nombre: (document.getElementById("nombre") as HTMLInputElement).value.trim(),
+          apellido: (document.getElementById("apellido") as HTMLInputElement).value.trim(),
+          celular: (document.getElementById("celular") as HTMLInputElement).value.trim(),
+          direccion: (document.getElementById("direccion") as HTMLInputElement).value.trim(),
+          fechaNacimiento: (document.getElementById("fechaNacimiento") as HTMLInputElement).value,
+          correo: (document.getElementById("correo") as HTMLInputElement).value.trim(),
           contrasena,
         };
 
@@ -142,7 +142,8 @@ import "../styles/global.css";
 
           window.location.href = "/login?registrado=1";
         } catch (error) {
-          errorBox.textContent = error.message;
+          errorBox.textContent =
+            error instanceof Error ? error.message : "No se pudo crear la cuenta";
           errorBox.style.display = "block";
         } finally {
           boton.disabled = false;

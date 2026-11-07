@@ -1,0 +1,134 @@
+---
+import "../styles/global.css";
+---
+
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Picur | Restablecer contraseña</title>
+  </head>
+
+  <body class="auth-page">
+
+    <div class="auth-card">
+
+      <div class="auth-logo">
+        <div class="logo-icon">P</div>
+        <span>Picur</span>
+      </div>
+
+      <h1>Nueva contraseña</h1>
+
+      <p class="auth-subtitle">
+        Ingresa el código que recibiste y define tu nueva contraseña.
+      </p>
+
+      <div id="auth-error" class="auth-error" style="display:none;"></div>
+
+      <form id="restablecer-form" class="auth-form">
+
+        <div class="form-group">
+          <label class="form-label" for="codigo">Código de verificación</label>
+          <input
+            class="form-input form-codigo"
+            type="text"
+            id="codigo"
+            name="codigo"
+            pattern="[0-9]{6}"
+            inputmode="numeric"
+            maxlength="6"
+            placeholder="000000"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="nuevaContrasena">Nueva contraseña</label>
+          <input
+            class="form-input"
+            type="password"
+            id="nuevaContrasena"
+            name="nuevaContrasena"
+            placeholder="••••••••"
+            minlength="6"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="confirmarContrasena">Confirmar contraseña</label>
+          <input
+            class="form-input"
+            type="password"
+            id="confirmarContrasena"
+            name="confirmarContrasena"
+            placeholder="••••••••"
+            minlength="6"
+            required
+          />
+        </div>
+
+        <button class="btn btn-primary btn-block" type="submit">
+          Restablecer contraseña
+        </button>
+
+      </form>
+
+      <p class="auth-link">
+        ¿No llegó el código?
+        <a href="/recuperar">Solicítalo de nuevo</a>
+      </p>
+
+    </div>
+
+    <script>
+      import { restablecerContrasena } from "../scripts/api.js";
+
+      const formulario = document.getElementById("restablecer-form")!;
+      const errorBox = document.getElementById("auth-error")!;
+      const boton = formulario.querySelector("button")!;
+
+      formulario.addEventListener("submit", async (evento) => {
+        evento.preventDefault();
+
+        errorBox.style.display = "none";
+
+        const contacto = new URLSearchParams(window.location.search).get("contacto") || "";
+        const codigo = (document.getElementById("codigo") as HTMLInputElement).value.trim();
+        const nuevaContrasena = (document.getElementById("nuevaContrasena") as HTMLInputElement).value;
+        const confirmar = (document.getElementById("confirmarContrasena") as HTMLInputElement).value;
+
+        if (nuevaContrasena !== confirmar) {
+          errorBox.textContent = "Las contraseñas no coinciden";
+          errorBox.style.display = "block";
+          return;
+        }
+
+        if (!contacto) {
+          errorBox.textContent = "Falta el correo. Vuelve a solicitar el código.";
+          errorBox.style.display = "block";
+          return;
+        }
+
+        boton.disabled = true;
+        boton.textContent = "Guardando...";
+
+        try {
+          await restablecerContrasena(contacto, codigo, nuevaContrasena);
+
+          localStorage.removeItem("picur_sesion");
+          window.location.href = "/login?recuperada=1";
+        } catch (error) {
+          errorBox.textContent =
+            error instanceof Error ? error.message : "No se pudo restablecer la contraseña";
+          errorBox.style.display = "block";
+        } finally {
+          boton.disabled = false;
+          boton.textContent = "Restablecer contraseña";
+        }
+      });
+    </script>
+
+  </body>
+</html>

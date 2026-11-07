@@ -197,40 +197,44 @@ import Layout from "../layouts/Layout.astro";
       etiquetaEstado,
       sufijoEstado,
     } from "../scripts/api.js";
+    import type { Medicion, MensajeWebSocket } from "../scripts/tipos";
 
     const LIMITE = 10;
     const TAMANO_BUFFER = 20;
 
     const CAMPOS = [
-      { id: "valor-ax", obtener: (m) => m.aceleracionX },
-      { id: "valor-ay", obtener: (m) => m.aceleracionY },
-      { id: "valor-az", obtener: (m) => m.aceleracionZ },
-      { id: "valor-frecuencia", obtener: (m) => m.frecuencia },
-      { id: "valor-rms", obtener: (m) => m.rms },
-      { id: "valor-inclinacion", obtener: (m) => m.inclinacion },
+      { id: "valor-ax", obtener: (m: Medicion) => m.aceleracionX },
+      { id: "valor-ay", obtener: (m: Medicion) => m.aceleracionY },
+      { id: "valor-az", obtener: (m: Medicion) => m.aceleracionZ },
+      { id: "valor-frecuencia", obtener: (m: Medicion) => m.frecuencia },
+      { id: "valor-rms", obtener: (m: Medicion) => m.rms },
+      { id: "valor-inclinacion", obtener: (m: Medicion) => m.inclinacion },
     ];
 
-    const SERIES = [
+    const SERIES: {
+      clave: "aceleracionX" | "aceleracionY" | "aceleracionZ";
+      color: string;
+    }[] = [
       { clave: "aceleracionX", color: "#2563eb" },
       { clave: "aceleracionY", color: "#7c3aed" },
       { clave: "aceleracionZ", color: "#059669" },
     ];
 
-    const tabla = document.getElementById("tabla-mediciones");
-    const total = document.getElementById("total-mediciones");
-    const panel = document.getElementById("panel-historial");
-    const vacio = document.getElementById("empty-mediciones");
-    const panelGrafico = document.getElementById("panel-grafico");
-    const grafico = document.getElementById("grafico-lineas");
-    const panelGraficoVib = document.getElementById("panel-grafico-vib");
-    const graficoVib = document.getElementById("grafico-vibracion");
+    const tabla = document.getElementById("tabla-mediciones")!;
+    const total = document.getElementById("total-mediciones")!;
+    const panel = document.getElementById("panel-historial")!;
+    const vacio = document.getElementById("empty-mediciones")!;
+    const panelGrafico = document.getElementById("panel-grafico")!;
+    const grafico = document.getElementById("grafico-lineas") as HTMLCanvasElement;
+    const panelGraficoVib = document.getElementById("panel-grafico-vib")!;
+    const graficoVib = document.getElementById("grafico-vibracion") as HTMLCanvasElement;
 
     // Muestras más recientes primero (página 0 de la API).
-    let mediciones = [];
+    let mediciones: Medicion[] = [];
     let estadoResumen = { total: 0, normales: 0, precaucion: 0, anomalas: 0 };
     let wsEnLinea = false;
 
-    function pintarGrafico(datos) {
+    function pintarGrafico(datos: Medicion[]) {
       if (!grafico || !panelGrafico) return;
 
       if (!datos || datos.length === 0) {
@@ -240,12 +244,12 @@ import Layout from "../layouts/Layout.astro";
       panelGrafico.style.display = "block";
 
       const ratio = window.devicePixelRatio || 1;
-      const ancho = grafico.parentElement.clientWidth || 600;
+      const ancho = grafico.parentElement?.clientWidth || 600;
       const alto = 300;
       grafico.style.height = `${alto}px`;
       grafico.width = ancho * ratio;
       grafico.height = alto * ratio;
-      const ctx = grafico.getContext("2d");
+      const ctx = grafico.getContext("2d")!;
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
       ctx.clearRect(0, 0, ancho, alto);
 
@@ -273,9 +277,9 @@ import Layout from "../layouts/Layout.astro";
       min -= rango * 0.12;
       max += rango * 0.12;
 
-      const x = (i) =>
+      const x = (i: number) =>
         margenIzq + (graficableAncho * i) / (datos.length - 1);
-      const y = (v) =>
+      const y = (v: number) =>
         margenSup + graficableAlto - ((Number(v) - min) / (max - min)) * graficableAlto;
 
       ctx.font = "11px Inter, Arial, sans-serif";
@@ -331,12 +335,16 @@ import Layout from "../layouts/Layout.astro";
       }
     }
 
-    const SERIES_VIB = [
+    const SERIES_VIB: {
+      clave: "vibracion" | "umbral";
+      color: string;
+      discontinua: boolean;
+    }[] = [
       { clave: "vibracion", color: "#2563eb", discontinua: false },
       { clave: "umbral", color: "#dc2626", discontinua: true },
     ];
 
-    function pintarGraficoVibracion(datos) {
+    function pintarGraficoVibracion(datos: Medicion[]) {
       if (!graficoVib || !panelGraficoVib) return;
 
       const puntos = (datos || []).map((m) => ({
@@ -356,12 +364,12 @@ import Layout from "../layouts/Layout.astro";
       panelGraficoVib.style.display = "block";
 
       const ratio = window.devicePixelRatio || 1;
-      const ancho = graficoVib.parentElement.clientWidth || 600;
+      const ancho = graficoVib.parentElement?.clientWidth || 600;
       const alto = 300;
       graficoVib.style.height = `${alto}px`;
       graficoVib.width = ancho * ratio;
       graficoVib.height = alto * ratio;
-      const ctx = graficoVib.getContext("2d");
+      const ctx = graficoVib.getContext("2d")!;
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
       ctx.clearRect(0, 0, ancho, alto);
 
@@ -393,11 +401,11 @@ import Layout from "../layouts/Layout.astro";
         max += rango * 0.12;
       }
 
-      const x = (i) =>
+      const x = (i: number) =>
         validos.length === 1
           ? margenIzq + graficableAncho / 2
           : margenIzq + (graficableAncho * i) / (validos.length - 1);
-      const y = (v) =>
+      const y = (v: number) =>
         margenSup +
         graficableAlto -
         ((Number(v) - min) / (max - min)) * graficableAlto;
@@ -530,7 +538,7 @@ import Layout from "../layouts/Layout.astro";
       pintarGraficoVibracion(ultimas);
     }
 
-    function actualizarEstado(medicion) {
+    function actualizarEstado(medicion: Medicion) {
       const panel = document.getElementById("panel-estado");
       const pill = document.getElementById("estado-pill");
       const titulo = document.getElementById("estado-titulo");
@@ -578,9 +586,9 @@ import Layout from "../layouts/Layout.astro";
       const resumenEl = document.getElementById("resumen-estados");
       if (resumenEl) resumenEl.style.display = "flex";
 
-      const set = (id, valor) => {
+      const set = (id: string, valor: number) => {
         const elemento = document.getElementById(id);
-        if (elemento) elemento.textContent = valor;
+        if (elemento) elemento.textContent = String(valor);
       };
 
       set("total-normales", estadoResumen.normales);
@@ -588,14 +596,14 @@ import Layout from "../layouts/Layout.astro";
       set("total-anomalas", estadoResumen.anomalas);
     }
 
-    function clasificarEstado(estado) {
+    function clasificarEstado(estado: string) {
       const e = String(estado || "").toUpperCase();
       if (e === "PRECAUCION") return "precaucion";
       if (e === "ANOMALA" || e === "ANOMALIA") return "anomala";
       return "normal";
     }
 
-    function procesarMedicion(datos) {
+    function procesarMedicion(datos?: Medicion) {
       if (!datos) return;
 
       const yaExiste = mediciones.some((m) => m.id === datos.id);
@@ -623,18 +631,20 @@ import Layout from "../layouts/Layout.astro";
       } catch (error) {
         window.marcarConexion(
           false,
-          error.message || "Se perdió la conexión con la API"
+          error instanceof Error && error.message
+            ? error.message
+            : "Se perdió la conexión con la API"
         );
       }
     }
 
     conectarWebSocket({
-      alMensaje: (mensaje) => {
+      alMensaje: (mensaje: MensajeWebSocket) => {
         if (mensaje && mensaje.tipo === "MEDICION") {
           procesarMedicion(mensaje.datos);
         }
       },
-      alCambiarEstado: (online) => {
+      alCambiarEstado: (online: boolean) => {
         wsEnLinea = online;
         window.marcarConexion(
           online,

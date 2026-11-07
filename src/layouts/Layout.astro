@@ -1,9 +1,10 @@
 ---
 import "../styles/global.css";
+import AsistenteLlavero from "../components/AsistenteLlavero.astro";
 
 interface Props {
   title?: string;
-  active?: "dashboard" | "mediciones" | "alertas";
+  active?: "dashboard" | "mediciones" | "alertas" | "recomendaciones";
   eyebrow?: string;
   heading?: string;
   subtitle?: string;
@@ -23,6 +24,12 @@ const {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
     <title>{title}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
+      rel="stylesheet"
+    />
   </head>
 
   <body>
@@ -36,19 +43,24 @@ const {
         </div>
 
         <nav>
-          <a href="/" class:list={active === "dashboard" && "active"}>
+          <a href="/" class:list={[active === "dashboard" && "active"]}>
             <span>▦</span>
             Dashboard
           </a>
 
-          <a href="/mediciones" class:list={active === "mediciones" && "active"}>
+          <a href="/mediciones" class:list={[active === "mediciones" && "active"]}>
             <span>◉</span>
             Mediciones
           </a>
 
-          <a href="/alertas" class:list={active === "alertas" && "active"}>
+          <a href="/alertas" class:list={[active === "alertas" && "active"]}>
             <span>⚠</span>
             Alertas
+          </a>
+
+          <a href="/recomendaciones" class:list={[active === "recomendaciones" && "active"]}>
+            <span>✦</span>
+            Asistente
           </a>
         </nav>
 
@@ -120,7 +132,7 @@ const {
       }
 
       // Helper compartido para actualizar el estado de conexión de la API
-      window.marcarConexion = (ok, mensaje = "Se perdió la conexión con la API") => {
+      window.marcarConexion = (ok: boolean, mensaje = "Se perdió la conexión con la API") => {
         const punto = document.getElementById("conn-dot");
         const texto = document.getElementById("conn-text");
         const estado = document.getElementById("connection-status");
@@ -139,5 +151,7 @@ const {
         }
       };
     </script>
+
+    <AsistenteLlavero />
   </body>
 </html>

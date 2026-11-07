@@ -2,6 +2,7 @@
 import "../styles/global.css";
 
 const registrado = Astro.url.searchParams.get("registrado") === "1";
+const recuperada = Astro.url.searchParams.get("recuperada") === "1";
 ---
 
 <html lang="es">
@@ -30,6 +31,14 @@ const registrado = Astro.url.searchParams.get("registrado") === "1";
         registrado && (
           <div class="auth-success">
             Cuenta creada correctamente. Inicia sesión con tu correo.
+          </div>
+        )
+      }
+
+      {
+        recuperada && (
+          <div class="auth-success">
+            Contraseña actualizada correctamente. Inicia sesión con tu nueva contraseña.
           </div>
         )
       }
@@ -69,6 +78,11 @@ const registrado = Astro.url.searchParams.get("registrado") === "1";
       </form>
 
       <p class="auth-link">
+        ¿Olvidaste tu contraseña?
+        <a href="/recuperar">Recupérala aquí</a>
+      </p>
+
+      <p class="auth-link">
         ¿No tienes cuenta?
         <a href="/registro">Regístrate aquí</a>
       </p>
@@ -78,9 +92,9 @@ const registrado = Astro.url.searchParams.get("registrado") === "1";
     <script>
       import { API_URL, guardarSesion } from "../scripts/api.js";
 
-      const formulario = document.getElementById("login-form");
-      const errorBox = document.getElementById("auth-error");
-      const boton = formulario.querySelector("button");
+      const formulario = document.getElementById("login-form")!;
+      const errorBox = document.getElementById("auth-error")!;
+      const boton = formulario.querySelector("button")!;
 
       // Si ya hay sesión iniciada, ir directo al dashboard
       if (localStorage.getItem("picur_sesion")) {
@@ -93,8 +107,8 @@ const registrado = Astro.url.searchParams.get("registrado") === "1";
         errorBox.style.display = "none";
 
         const datos = {
-          correo: document.getElementById("correo").value.trim(),
-          contrasena: document.getElementById("contrasena").value,
+          correo: (document.getElementById("correo") as HTMLInputElement).value.trim(),
+          contrasena: (document.getElementById("contrasena") as HTMLInputElement).value,
         };
 
         boton.disabled = true;
@@ -116,7 +130,8 @@ const registrado = Astro.url.searchParams.get("registrado") === "1";
           guardarSesion(cuerpo);
           window.location.href = "/";
         } catch (error) {
-          errorBox.textContent = error.message;
+          errorBox.textContent =
+            error instanceof Error ? error.message : "No se pudo iniciar sesión";
           errorBox.style.display = "block";
         } finally {
           boton.disabled = false;

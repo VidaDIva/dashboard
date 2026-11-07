@@ -60,6 +60,33 @@ export function obtenerResumen() {
   return solicitud("/mediciones/resumen");
 }
 
+// ===== Recuperación de contraseña =====
+
+export function solicitarRecuperacion(contacto) {
+  return solicitud("/usuarios/recuperar", {
+    method: "POST",
+    body: JSON.stringify({ contacto }),
+  });
+}
+
+export function restablecerContrasena(contacto, codigo, nuevaContrasena) {
+  return solicitud("/usuarios/recuperar/restablecer", {
+    method: "POST",
+    body: JSON.stringify({ contacto, codigo, nuevaContrasena }),
+  });
+}
+
+// ===== Asistente IA =====
+
+export function obtenerEstadoAsistente() {
+  return solicitud("/asistente/estado");
+}
+
+export function obtenerRecomendaciones({ pagina = 0, tamano = 10 } = {}) {
+  const params = new URLSearchParams({ page: pagina, size: tamano });
+  return solicitud(`/asistente/recomendaciones?${params.toString()}`);
+}
+
 // ===== WebSocket (tiempo real) =====
 
 export function conectarWebSocket({ alMensaje, alCambiarEstado } = {}) {
