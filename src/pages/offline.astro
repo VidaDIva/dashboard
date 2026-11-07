@@ -1,0 +1,55 @@
+---
+import "../styles/global.css";
+import RegistroPWA from "../components/RegistroPWA.astro";
+---
+
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#111827" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Picur" />
+    <title>Picur | Sin conexión</title>
+  </head>
+
+  <body class="auth-page">
+    <div class="auth-card offline-card">
+      <div class="auth-logo">
+        <div class="logo-icon">P</div>
+        <span>Picur</span>
+      </div>
+
+      <div class="offline-icon" aria-hidden="true">📡</div>
+      <h1>Sin conexión</h1>
+      <p class="auth-subtitle">
+        No pudimos contactar el servidor de Picur. Revisa tu conexión a internet e inténtalo de nuevo.
+      </p>
+
+      <button id="btn-reintentar" class="btn btn-primary btn-block" type="button">
+        Reintentar
+      </button>
+
+      <p class="auth-link">
+        <a href="/">Volver al inicio</a>
+      </p>
+    </div>
+
+    <script>
+      const boton = document.getElementById("btn-reintentar");
+
+      boton?.addEventListener("click", () => {
+        window.location.href = "/";
+      });
+    </script>
+    <RegistroPWA />
+  </body>
+</html>

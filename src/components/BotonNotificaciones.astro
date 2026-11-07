@@ -1,0 +1,91 @@
+<section class="panel notificaciones-panel" id="panel-notificaciones">
+  <div class="notificaciones-texto">
+    <h2>Notificaciones push</h2>
+    <p id="notificaciones-estado">
+      Activa las alertas para recibir un aviso cuando el sensor detecte una anomalía.
+    </p>
+  </div>
+
+  <button id="btn-notificaciones" class="btn btn-primary" type="button">
+    Activar
+  </button>
+</section>
+
+<script>
+  import {
+    activarPush,
+    desactivarPush,
+    estadoPush,
+    sincronizarPush,
+  } from "../scripts/push.js";
+
+  const boton = document.getElementById("btn-notificaciones") as HTMLButtonElement | null;
+  const estadoTexto = document.getElementById("notificaciones-estado");
+
+  type Estado = "unsupported" | "denied" | "subscribed" | "available";
+
+  function pintar(estado: Estado) {
+    if (!boton || !estadoTexto) return;
+
+    boton.disabled = false;
+    boton.textContent = "Activar";
+
+    if (estado === "unsupported") {
+      boton.disabled = true;
+      boton.textContent = "No disponible";
+      estadoTexto.textContent =
+        "Este navegador no soporta push. En iPhone, instala Picur en la pantalla de inicio (iOS 16.4 o superior).";
+      return;
+    }
+
+    if (estado === "denied") {
+      boton.disabled = true;
+      boton.textContent = "Bloqueadas";
+      estadoTexto.textContent =
+        "Las notificaciones están bloqueadas. Habilítalas en los ajustes del navegador o del sistema.";
+      return;
+    }
+
+    if (estado === "subscribed") {
+      boton.textContent = "Desactivar";
+      estadoTexto.textContent =
+        "Notificaciones activas: recibirás avisos de precaución y anomalías.";
+      return;
+    }
+
+    estadoTexto.textContent =
+      "Activa las alertas para recibir un aviso cuando el sensor detecte una anomalía.";
+  }
+
+  async function actualizar() {
+    const estado = (await estadoPush()) as Estado;
+    if (estado === "subscribed") {
+      await sincronizarPush();
+    }
+    pintar(estado);
+  }
+
+  boton?.addEventListener("click", async () => {
+    const estado = await estadoPush();
+
+    boton.disabled = true;
+    boton.textContent = estado === "subscribed" ? "Desactivando..." : "Activando...";
+
+    try {
+      if (estado === "subscribed") {
+        await desactivarPush();
+        estadoTexto!.textContent = "Notificaciones desactivadas.";
+        pintar("available");
+      } else {
+        await activarPush();
+        pintar("subscribed");
+      }
+    } catch (error) {
+      estadoTexto!.textContent =
+        error instanceof Error ? error.message : "No se pudieron activar las notificaciones";
+      pintar("available");
+    }
+  });
+
+  actualizar();
+</script>

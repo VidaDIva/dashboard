@@ -1,6 +1,35 @@
-export const API_URL = "http://localhost:8080/api";
+function resolverApiUrl() {
+  const configurada = import.meta.env.PUBLIC_API_URL?.trim();
+  if (configurada) return configurada.replace(/\/+$/, "");
+  return "http://localhost:8080/api";
+}
 
-export const WS_URL = "ws://localhost:8080/ws";
+function resolverWsUrl(apiUrl) {
+  const configurada = import.meta.env.PUBLIC_WS_URL?.trim();
+  if (configurada) return configurada.replace(/\/+$/, "");
+
+  try {
+    const base =
+      typeof window !== "undefined"
+        ? window.location.href
+        : "http://localhost:8080/";
+    const url = new URL(apiUrl, base);
+    url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+    url.pathname = url.pathname.replace(/\/api\/?$/, "/ws");
+    url.search = "";
+    url.hash = "";
+    return url.toString().replace(/\/+$/, "");
+  } catch {
+    return "ws://localhost:8080/ws";
+  }
+}
+
+export const API_URL = resolverApiUrl();
+
+export const WS_URL = resolverWsUrl(API_URL);
+
+export const VAPID_PUBLIC_KEY =
+  import.meta.env.PUBLIC_VAPID_PUBLIC_KEY?.trim() || "";
 
 export const SESION_KEY = "picur_sesion";
 

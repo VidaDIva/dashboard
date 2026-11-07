@@ -1,11 +1,23 @@
 ---
 import "../styles/global.css";
+import RegistroPWA from "../components/RegistroPWA.astro";
 ---
 
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#111827" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Picur" />
     <title>Picur | Crear cuenta</title>
   </head>
 
@@ -32,12 +44,12 @@ import "../styles/global.css";
 
           <div class="form-group">
             <label class="form-label" for="nombre">Nombre</label>
-            <input class="form-input" type="text" id="nombre" name="nombre" placeholder="Ana" required />
+            <input class="form-input" type="text" id="nombre" name="nombre" placeholder="Ana" autocomplete="given-name" required />
           </div>
 
           <div class="form-group">
             <label class="form-label" for="apellido">Apellido</label>
-            <input class="form-input" type="text" id="apellido" name="apellido" placeholder="García" required />
+            <input class="form-input" type="text" id="apellido" name="apellido" placeholder="García" autocomplete="family-name" required />
           </div>
 
         </div>
@@ -46,36 +58,36 @@ import "../styles/global.css";
 
           <div class="form-group">
             <label class="form-label" for="celular">Celular</label>
-            <input class="form-input" type="tel" id="celular" name="celular" placeholder="3001234567" maxlength="15" required />
+            <input class="form-input" type="tel" id="celular" name="celular" placeholder="3001234567" autocomplete="tel" inputmode="tel" maxlength="15" required />
           </div>
 
           <div class="form-group">
             <label class="form-label" for="fechaNacimiento">Fecha de nacimiento</label>
-            <input class="form-input" type="date" id="fechaNacimiento" name="fechaNacimiento" required />
+            <input class="form-input" type="date" id="fechaNacimiento" name="fechaNacimiento" autocomplete="bday" required />
           </div>
 
         </div>
 
         <div class="form-group">
           <label class="form-label" for="direccion">Dirección</label>
-          <input class="form-input" type="text" id="direccion" name="direccion" placeholder="Calle 123 # 45-67" required />
+          <input class="form-input" type="text" id="direccion" name="direccion" placeholder="Calle 123 # 45-67" autocomplete="street-address" required />
         </div>
 
         <div class="form-group">
           <label class="form-label" for="correo">Correo electrónico</label>
-          <input class="form-input" type="email" id="correo" name="correo" placeholder="tucorreo@ejemplo.com" required />
+          <input class="form-input" type="email" id="correo" name="correo" placeholder="tucorreo@ejemplo.com" autocomplete="email" inputmode="email" required />
         </div>
 
         <div class="form-row">
 
           <div class="form-group">
             <label class="form-label" for="contrasena">Contraseña</label>
-            <input class="form-input" type="password" id="contrasena" name="contrasena" placeholder="••••••••" required />
+            <input class="form-input" type="password" id="contrasena" name="contrasena" placeholder="••••••••" autocomplete="new-password" required />
           </div>
 
           <div class="form-group">
             <label class="form-label" for="confirmarContrasena">Confirmar contraseña</label>
-            <input class="form-input" type="password" id="confirmarContrasena" name="confirmarContrasena" placeholder="••••••••" required />
+            <input class="form-input" type="password" id="confirmarContrasena" name="confirmarContrasena" placeholder="••••••••" autocomplete="new-password" required />
           </div>
 
         </div>
@@ -152,5 +164,6 @@ import "../styles/global.css";
       });
     </script>
 
+    <RegistroPWA />
   </body>
 </html>

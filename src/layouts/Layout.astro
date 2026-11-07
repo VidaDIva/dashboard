@@ -1,6 +1,7 @@
 ---
 import "../styles/global.css";
 import AsistenteLlavero from "../components/AsistenteLlavero.astro";
+import RegistroPWA from "../components/RegistroPWA.astro";
 
 interface Props {
   title?: string;
@@ -17,13 +18,31 @@ const {
   heading = "Dashboard",
   subtitle = "",
 } = Astro.props;
+
+const enlaces = [
+  { clave: "dashboard", href: "/", icono: "▦", etiqueta: "Dashboard" },
+  { clave: "mediciones", href: "/mediciones", icono: "◉", etiqueta: "Mediciones" },
+  { clave: "alertas", href: "/alertas", icono: "⚠", etiqueta: "Alertas" },
+  { clave: "recomendaciones", href: "/recomendaciones", icono: "✦", etiqueta: "Asistente" },
+] as const;
 ---
 
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
     <title>{title}</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#111827" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Picur" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -42,42 +61,51 @@ const {
           <span>Picur</span>
         </div>
 
-        <nav>
-          <a href="/" class:list={[active === "dashboard" && "active"]}>
-            <span>▦</span>
-            Dashboard
-          </a>
-
-          <a href="/mediciones" class:list={[active === "mediciones" && "active"]}>
-            <span>◉</span>
-            Mediciones
-          </a>
-
-          <a href="/alertas" class:list={[active === "alertas" && "active"]}>
-            <span>⚠</span>
-            Alertas
-          </a>
-
-          <a href="/recomendaciones" class:list={[active === "recomendaciones" && "active"]}>
-            <span>✦</span>
-            Asistente
-          </a>
+        <nav aria-label="Navegación principal">
+          {
+            enlaces.map((enlace) => (
+              <a
+                href={enlace.href}
+                class:list={[active === enlace.clave && "active"]}
+                aria-current={active === enlace.clave ? "page" : undefined}
+              >
+                <span aria-hidden="true">{enlace.icono}</span>
+                {enlace.etiqueta}
+              </a>
+            ))
+          }
         </nav>
 
         <div class="sidebar-bottom">
-          <div id="user-name" class="user-greeting"></div>
+          <div data-user-name class="user-greeting"></div>
 
           <div class="status">
             <span class="status-dot"></span>
             Sistema conectado
           </div>
 
-          <button id="btn-salir" class="btn-salir" type="button">
+          <button class="btn-salir" type="button" data-logout>
             Salir
           </button>
         </div>
 
       </aside>
+
+      <header class="mobile-topbar">
+
+        <a class="mobile-logo" href="/" aria-label="Picur, ir al inicio">
+          <span class="logo-icon">P</span>
+          <span>Picur</span>
+        </a>
+
+        <div class="mobile-actions">
+          <span data-user-name class="user-greeting-movil"></span>
+          <button class="btn-salir-movil" type="button" data-logout>
+            Salir
+          </button>
+        </div>
+
+      </header>
 
       <main class="main">
 
@@ -104,6 +132,21 @@ const {
 
       </main>
 
+      <nav class="mobile-nav" aria-label="Navegación principal">
+        {
+          enlaces.map((enlace) => (
+            <a
+              href={enlace.href}
+              class:list={[active === enlace.clave && "active"]}
+              aria-current={active === enlace.clave ? "page" : undefined}
+            >
+              <span class="mobile-nav-icon" aria-hidden="true">{enlace.icono}</span>
+              <span class="mobile-nav-label">{enlace.etiqueta}</span>
+            </a>
+          ))
+        }
+      </nav>
+
     </div>
 
     <script>
@@ -116,20 +159,22 @@ const {
         window.location.replace("/login");
       }
 
-      const saludar = document.getElementById("user-name");
-      if (saludar && sesion) {
-        saludar.textContent = sesion.nombre
+      const saludos = document.querySelectorAll("[data-user-name]");
+      if (sesion) {
+        const texto = sesion.nombre
           ? `Hola, ${sesion.nombre}`
           : "Sesión iniciada";
+        saludos.forEach((saludo) => {
+          saludo.textContent = texto;
+        });
       }
 
-      const botonSalir = document.getElementById("btn-salir");
-      if (botonSalir) {
+      document.querySelectorAll("[data-logout]").forEach((botonSalir) => {
         botonSalir.addEventListener("click", () => {
           cerrarSesion();
           window.location.href = "/login";
         });
-      }
+      });
 
       // Helper compartido para actualizar el estado de conexión de la API
       window.marcarConexion = (ok: boolean, mensaje = "Se perdió la conexión con la API") => {
@@ -153,5 +198,6 @@ const {
     </script>
 
     <AsistenteLlavero />
+    <RegistroPWA />
   </body>
 </html>

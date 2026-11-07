@@ -1,11 +1,23 @@
 ---
 import "../styles/global.css";
+import RegistroPWA from "../components/RegistroPWA.astro";
 ---
 
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#111827" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Picur" />
     <title>Picur | Restablecer contraseña</title>
   </head>
 
@@ -37,6 +49,7 @@ import "../styles/global.css";
             name="codigo"
             pattern="[0-9]{6}"
             inputmode="numeric"
+            autocomplete="one-time-code"
             maxlength="6"
             placeholder="000000"
             required
@@ -51,6 +64,7 @@ import "../styles/global.css";
             id="nuevaContrasena"
             name="nuevaContrasena"
             placeholder="••••••••"
+            autocomplete="new-password"
             minlength="6"
             required
           />
@@ -64,6 +78,7 @@ import "../styles/global.css";
             id="confirmarContrasena"
             name="confirmarContrasena"
             placeholder="••••••••"
+            autocomplete="new-password"
             minlength="6"
             required
           />
@@ -130,5 +145,6 @@ import "../styles/global.css";
       });
     </script>
 
+    <RegistroPWA />
   </body>
 </html>

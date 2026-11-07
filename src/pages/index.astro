@@ -245,7 +245,8 @@ import Layout from "../layouts/Layout.astro";
 
       const ratio = window.devicePixelRatio || 1;
       const ancho = grafico.parentElement?.clientWidth || 600;
-      const alto = 300;
+      const compacto = ancho < 520;
+      const alto = ancho < 380 ? 200 : ancho < 768 ? 240 : 300;
       grafico.style.height = `${alto}px`;
       grafico.width = ancho * ratio;
       grafico.height = alto * ratio;
@@ -253,10 +254,10 @@ import Layout from "../layouts/Layout.astro";
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
       ctx.clearRect(0, 0, ancho, alto);
 
-      const margenIzq = 52;
-      const margenDer = 16;
-      const margenSup = 24;
-      const margenInf = 34;
+      const margenIzq = compacto ? 38 : 52;
+      const margenDer = compacto ? 10 : 16;
+      const margenSup = compacto ? 18 : 24;
+      const margenInf = compacto ? 28 : 34;
       const graficableAncho = ancho - margenIzq - margenDer;
       const graficableAlto = alto - margenSup - margenInf;
 
@@ -282,7 +283,7 @@ import Layout from "../layouts/Layout.astro";
       const y = (v: number) =>
         margenSup + graficableAlto - ((Number(v) - min) / (max - min)) * graficableAlto;
 
-      ctx.font = "11px Inter, Arial, sans-serif";
+      ctx.font = `${compacto ? 10 : 11}px Inter, Arial, sans-serif`;
       ctx.fillStyle = "#9ca3af";
       ctx.strokeStyle = "#edf0f4";
       ctx.lineWidth = 1;
@@ -328,7 +329,7 @@ import Layout from "../layouts/Layout.astro";
 
         datos.forEach((m, i) => {
           ctx.beginPath();
-          ctx.arc(x(i), y(m[s.clave]), 3, 0, Math.PI * 2);
+          ctx.arc(x(i), y(m[s.clave]), compacto ? 2 : 3, 0, Math.PI * 2);
           ctx.fillStyle = s.color;
           ctx.fill();
         });
@@ -365,7 +366,8 @@ import Layout from "../layouts/Layout.astro";
 
       const ratio = window.devicePixelRatio || 1;
       const ancho = graficoVib.parentElement?.clientWidth || 600;
-      const alto = 300;
+      const compacto = ancho < 520;
+      const alto = ancho < 380 ? 200 : ancho < 768 ? 240 : 300;
       graficoVib.style.height = `${alto}px`;
       graficoVib.width = ancho * ratio;
       graficoVib.height = alto * ratio;
@@ -373,10 +375,10 @@ import Layout from "../layouts/Layout.astro";
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
       ctx.clearRect(0, 0, ancho, alto);
 
-      const margenIzq = 52;
-      const margenDer = 16;
-      const margenSup = 24;
-      const margenInf = 34;
+      const margenIzq = compacto ? 38 : 52;
+      const margenDer = compacto ? 10 : 16;
+      const margenSup = compacto ? 18 : 24;
+      const margenInf = compacto ? 28 : 34;
       const graficableAncho = ancho - margenIzq - margenDer;
       const graficableAlto = alto - margenSup - margenInf;
 
@@ -410,7 +412,7 @@ import Layout from "../layouts/Layout.astro";
         graficableAlto -
         ((Number(v) - min) / (max - min)) * graficableAlto;
 
-      ctx.font = "11px Inter, Arial, sans-serif";
+      ctx.font = `${compacto ? 10 : 11}px Inter, Arial, sans-serif`;
       ctx.fillStyle = "#9ca3af";
       ctx.strokeStyle = "#edf0f4";
       ctx.lineWidth = 1;
@@ -468,7 +470,7 @@ import Layout from "../layouts/Layout.astro";
             const v = p[s.clave];
             if (!Number.isFinite(v)) return;
             ctx.beginPath();
-            ctx.arc(x(i), y(v), 3, 0, Math.PI * 2);
+            ctx.arc(x(i), y(v), compacto ? 2 : 3, 0, Math.PI * 2);
             ctx.fillStyle = s.color;
             ctx.fill();
           });
@@ -513,22 +515,22 @@ import Layout from "../layouts/Layout.astro";
         .map(
           (m, index) => `
             <tr>
-              <td class="number">${index + 1}</td>
-              <td>
+              <td class="number" data-label="#">${index + 1}</td>
+              <td data-label="Estado">
                 <span class="estado-badge badge-${sufijoEstado(m.estado)}">
                   ${etiquetaEstado(m.estado)}
                 </span>
               </td>
-              <td>${formatearNumero(m.aceleracionX)}</td>
-              <td>${formatearNumero(m.aceleracionY)}</td>
-              <td>${formatearNumero(m.aceleracionZ)}</td>
-              <td>${formatearNumero(m.frecuencia)} Hz</td>
-              <td>${formatearNumero(m.rms)}</td>
-              <td>${formatearNumero(m.inclinacion)}°</td>
-              <td>${formatearNumero(m.vibracion)}</td>
-              <td>${formatearNumero(m.umbral)}</td>
-              <td>${formatearNumero(m.indiceAnomalia)}</td>
-              <td>${formatearFecha(m.fechaRegistro)}</td>
+              <td data-label="Aceleración X">${formatearNumero(m.aceleracionX)}</td>
+              <td data-label="Aceleración Y">${formatearNumero(m.aceleracionY)}</td>
+              <td data-label="Aceleración Z">${formatearNumero(m.aceleracionZ)}</td>
+              <td data-label="Frecuencia">${formatearNumero(m.frecuencia)} Hz</td>
+              <td data-label="RMS">${formatearNumero(m.rms)}</td>
+              <td data-label="Inclinación">${formatearNumero(m.inclinacion)}°</td>
+              <td data-label="Vibración">${formatearNumero(m.vibracion)}</td>
+              <td data-label="Umbral">${formatearNumero(m.umbral)}</td>
+              <td data-label="Índice">${formatearNumero(m.indiceAnomalia)}</td>
+              <td data-label="Fecha">${formatearFecha(m.fechaRegistro)}</td>
             </tr>
           `
         )
@@ -659,6 +661,18 @@ import Layout from "../layouts/Layout.astro";
     setInterval(() => {
       if (!wsEnLinea) cargarInicial();
     }, 15000);
+
+    // Redibujar los gráficos al cambiar de tamaño o girar el celular.
+    let temporizadorResize: ReturnType<typeof setTimeout> | null = null;
+    window.addEventListener("resize", () => {
+      if (temporizadorResize) clearTimeout(temporizadorResize);
+      temporizadorResize = setTimeout(() => {
+        if (mediciones.length === 0) return;
+        const ultimas = mediciones.slice(0, LIMITE);
+        pintarGrafico(ultimas);
+        pintarGraficoVibracion(ultimas);
+      }, 180);
+    });
   </script>
 
 </Layout>
