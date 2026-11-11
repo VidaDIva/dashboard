@@ -1,6 +1,7 @@
 ---
 import "../styles/global.css";
 import RegistroPWA from "../components/RegistroPWA.astro";
+import VerContrasena from "../components/VerContrasena.astro";
 
 const registrado = Astro.url.searchParams.get("registrado") === "1";
 const recuperada = Astro.url.searchParams.get("recuperada") === "1";
@@ -29,8 +30,8 @@ const recuperada = Astro.url.searchParams.get("recuperada") === "1";
     <div class="auth-card">
 
       <div class="auth-logo">
-        <div class="logo-icon">P</div>
-        <span>Picur</span>
+        <div class="logo-icon"><img src="/logo.png" alt="" /></div>
+        <span>GlideVibAI</span>
       </div>
 
       <h1>Iniciar sesión</h1>
@@ -156,5 +157,6 @@ const recuperada = Astro.url.searchParams.get("recuperada") === "1";
     </script>
 
     <RegistroPWA />
+    <VerContrasena />
   </body>
 </html>

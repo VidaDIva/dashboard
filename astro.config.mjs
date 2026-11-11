@@ -4,6 +4,7 @@ import { AstroPWAIntegration } from '@vite-pwa/astro';
 
 // https://astro.build/config
 export default defineConfig({
+  devToolbar: { enabled: false },
   integrations: [
     AstroPWAIntegration({
       registerType: 'autoUpdate',

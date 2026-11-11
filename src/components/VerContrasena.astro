@@ -1,0 +1,25 @@
+<script>
+  // Agrega un botón para mostrar/ocultar cada campo de contraseña de la página.
+  document.querySelectorAll<HTMLInputElement>('input[type="password"]').forEach((input) => {
+    const envoltura = document.createElement("div");
+    envoltura.className = "campo-contrasena";
+    input.replaceWith(envoltura);
+    envoltura.append(input);
+
+    const boton = document.createElement("button");
+    boton.type = "button";
+    boton.className = "ver-contrasena";
+    boton.textContent = "Mostrar";
+    boton.setAttribute("aria-label", "Mostrar contraseña");
+    boton.setAttribute("aria-pressed", "false");
+    envoltura.append(boton);
+
+    boton.addEventListener("click", () => {
+      const visible = input.type === "password";
+      input.type = visible ? "text" : "password";
+      boton.textContent = visible ? "Ocultar" : "Mostrar";
+      boton.setAttribute("aria-label", visible ? "Ocultar contraseña" : "Mostrar contraseña");
+      boton.setAttribute("aria-pressed", String(visible));
+    });
+  });
+</script>
